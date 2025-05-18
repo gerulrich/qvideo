@@ -23,7 +23,7 @@ import java.util.Optional;
 public class StreamService {
 
     private static final Logger LOG = Logger.getLogger(StreamService.class);
-    private static final String MANIFEST_REDIRECT_URL = "%slive/%s/%s/%s.mpd";
+    private static final String MANIFEST_REDIRECT_URL = "/live/%s/%s/%s.mpd";
     private static final String USER_AGENT = "okhttp/4.12.0";
 
     @Inject
@@ -37,7 +37,7 @@ public class StreamService {
         base64Encoder = Base64.getEncoder();
     }
 
-    public Uni<String> getManifestRedirect(String baseUri, String channel) {
+    public Uni<String> getManifestRedirect(String channel) {
         LOG.infof("Channel URL: %s", channel);
         return Optional.ofNullable(Channel.findByCode(channel))
                 .map(c -> httpClient.request(
@@ -55,7 +55,7 @@ public class StreamService {
                             String location = resp.headers().get(HttpHeaders.LOCATION);
                             String token = location.split("/")[3];
                             String host = base64Encoder.encodeToString(location.split("/")[2].getBytes());
-                            return String.format(MANIFEST_REDIRECT_URL, baseUri, host, token, c.code);
+                            return String.format(MANIFEST_REDIRECT_URL, host, token, c.code);
                         }))
                 .orElse(Uni.createFrom().failure(new WebApplicationException("Channel not found", 404)));
     }

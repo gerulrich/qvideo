@@ -5,10 +5,8 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 import quantum.music.service.ProxyService;
 import quantum.music.service.StreamService;
@@ -26,10 +24,9 @@ public class VideoResource {
     @GET
     @Path("/manifest/{channel}.mpd")
     @Produces("text/html")
-    public Uni<Response> manifest(@PathParam("channel") String channel, @Context UriInfo uriInfo) {
+    public Uni<Response> manifest(@PathParam("channel") String channel) {
         LOG.infof("Request for manifest: %s", channel);
-        String baseUri = uriInfo.getBaseUri().toString();
-        return streamService.getManifestRedirect(baseUri, channel)
+        return streamService.getManifestRedirect(channel)
             .onItem().transform(url ->
                 Response.status(Response.Status.FOUND)
                 .header(HttpHeaders.LOCATION, url)
