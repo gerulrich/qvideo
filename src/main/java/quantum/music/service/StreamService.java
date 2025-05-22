@@ -15,6 +15,7 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.jboss.logging.Logger;
 import quantum.music.model.Channel;
+import quantum.music.model.Program;
 
 import java.util.Base64;
 import java.util.Optional;
@@ -24,6 +25,8 @@ public class StreamService {
 
     private static final Logger LOG = Logger.getLogger(StreamService.class);
     private static final String MANIFEST_REDIRECT_URL = "/live/%s/%s/%s.mpd";
+
+    private static final String PVR_MANIFEST_URL = "/pvr/%s/%s/%s/a/b/c/d/e/%s.mpd";
     private static final String USER_AGENT = "okhttp/4.12.0";
 
     @Inject
@@ -31,10 +34,41 @@ public class StreamService {
     private HttpClient httpClient;
     private Base64.Encoder base64Encoder;
 
+    public StreamService(Vertx vertx) {
+        this.vertx = vertx;
+    }
+
+    public StreamService() {
+    }
+
     @PostConstruct
     void init() {
         httpClient = vertx.createHttpClient();
         base64Encoder = Base64.getEncoder();
+    }
+
+    public Uni<String> getPvrManifestUrl(String id, String channel) {
+        LOG.infof("Channel URL: %s", channel);
+        return Optional.ofNullable(Program.findById(id))
+                .map(program -> httpClient.request(
+                                new RequestOptions()
+                                        .setMethod(HttpMethod.GET)
+                                        .setAbsoluteURI(program.url)
+                                        .setHeaders(
+                                                MultiMap.caseInsensitiveMultiMap()
+                                                        .add("User-Agent", USER_AGENT)
+                                                        .add("X-Flow-Origin", "AndroidTV")
+                                        )
+                        )
+                        .onItem().transformToUni(req -> req.send())
+                        .onFailure().retry().atMost(3)
+                        .onItem().transform(resp -> {
+                            String location = resp.headers().get(HttpHeaders.LOCATION);
+                            String token = location.split("/")[3];
+                            String host = base64Encoder.encodeToString(location.split("/")[2].getBytes());
+                            return String.format(PVR_MANIFEST_URL, host, token, id, channel);
+                        }))
+                .orElse(Uni.createFrom().failure(new WebApplicationException("Channel not found", 404)));
     }
 
     public Uni<String> getManifestRedirect(String channel) {
@@ -51,6 +85,7 @@ public class StreamService {
                                         )
                         )
                         .onItem().transformToUni(req -> req.send())
+                        .onFailure().retry().atMost(3)
                         .onItem().transform(resp -> {
                             String location = resp.headers().get(HttpHeaders.LOCATION);
                             String token = location.split("/")[3];
@@ -78,6 +113,7 @@ public class StreamService {
                             .add("X-Flow-Origin", "AndroidTV")
                 ))
                 .onItem().transformToUni(req -> req.send())
+                .onFailure().retry().atMost(3)
                 .subscribe().with(resp -> {
                     if (resp.statusCode() != 200) {
                         emitter.fail(new WebApplicationException("Failed: " + resp.statusCode(), resp.statusCode()));
