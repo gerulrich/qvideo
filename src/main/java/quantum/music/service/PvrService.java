@@ -1,44 +1,45 @@
 package quantum.music.service;
 
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import quantum.music.model.Program;
 
 import java.net.URI;
 import java.net.URL;
 import java.util.Base64;
-import java.util.Optional;
 
 @ApplicationScoped
 public class PvrService {
 
     private final Base64.Decoder base64Decoder = Base64.getDecoder();
 
+    @Inject
+    @CacheName("program")
+    Cache cache;
+
+    private Uni<Program> getProgram(String id) {
+        return cache.get(id, Program::findById);
+    }
+
     public Uni<String> getMPDUrl(String host, String token, String id, String channel) {
-        return Optional
-            .ofNullable(Program.findById(id))
+        return getProgram(id)
             .flatMap(program -> extractPathBetweenDomainAndFile(program.url))
-            .map(path -> formatMpdUrl(host, token, channel, path))
-            .map(url ->  Uni.createFrom().item(url))
-            .orElse(Uni.createFrom().failure(new Exception("Channel not found")));
+            .map(path -> formatMpdUrl(host, token, channel, path));
     }
 
     public Uni<String> getVideoUrl(String host, String token, String id, String channel, String file) {
-        return Optional
-            .ofNullable(Program.findById(id))
+        return getProgram(id)
             .flatMap(program -> extractPathBetweenDomainAndFile(program.url))
-            .map(path -> formatVideoUrl(host, token, path, channel, file))
-            .map(url ->  Uni.createFrom().item(url))
-            .orElse(Uni.createFrom().failure(new Exception("Channel not found")));
+            .map(path -> formatVideoUrl(host, token, path, channel, file));
     }
 
     public Uni<String> getAudioUrl(String host, String token, String id, String channel, String file) {
-        return Optional
-            .ofNullable(Program.findById(id))
+        return getProgram(id)
             .flatMap(program -> extractPathBetweenDomainAndFile(program.url))
-            .map(path -> formatAudioUrl(host, token, path, channel, file))
-            .map(url ->  Uni.createFrom().item(url))
-            .orElse(Uni.createFrom().failure(new Exception("Channel not found")));
+            .map(path -> formatAudioUrl(host, token, path, channel, file));
     }
 
     private String formatMpdUrl(String host, String token, String channel, String path) {
@@ -56,7 +57,7 @@ public class PvrService {
                 token + path + channel + "-mp4a_" + file + ".mp4";
     }
 
-    private Optional<String> extractPathBetweenDomainAndFile(String urlString) {
+    private Uni<String> extractPathBetweenDomainAndFile(String urlString) {
         return getUrl(urlString).map(url -> {
             String path = url.getPath();
             int lastSlash = path.lastIndexOf("/");
@@ -64,11 +65,11 @@ public class PvrService {
         });
     }
 
-    private Optional<URL> getUrl(String url) {
+    private Uni<URL> getUrl(String url) {
         try {
-            return Optional.of(new URI(url).toURL());
+            return Uni.createFrom().item(new URI(url).toURL());
         } catch (Exception e) {
-            return Optional.empty();
+            return Uni.createFrom().failure(e);
         }
     }
 

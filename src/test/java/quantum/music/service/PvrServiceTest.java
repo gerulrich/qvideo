@@ -1,22 +1,43 @@
 package quantum.music.service;
 
+import io.quarkus.cache.Cache;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import quantum.music.model.Program;
 
 import java.util.Base64;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 class PvrServiceTest {
 
-    PvrService pvrService;
+    @InjectMocks
+    private PvrService pvrService = new PvrService();
+    private AutoCloseable closeable;
+    @Mock
+    private Cache cache;
 
     @BeforeEach
     void setUp() {
-        pvrService = new PvrService();
+        closeable = openMocks(this);
+        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
+            String channelCode = invocation.getArgument(0);
+            Function<String, Program> function = invocation.getArgument(1);
+            return Uni.createFrom().item(function.apply(channelCode));
+        });
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        if (closeable != null) {
+            closeable.close();
+        }
     }
 
     @Test
