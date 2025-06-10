@@ -1,0 +1,9 @@
+package quantum.music.api;
+
+import java.util.List;
+
+public record PageResponse<T> (
+    List<T> items,
+    Paging paging
+){
+}

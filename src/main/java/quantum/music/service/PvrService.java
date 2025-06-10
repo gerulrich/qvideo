@@ -5,11 +5,14 @@ import io.quarkus.cache.CacheName;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.bson.types.ObjectId;
 import quantum.music.model.Program;
+import quantum.music.repository.ProgramRepository;
 
 import java.net.URI;
 import java.net.URL;
 import java.util.Base64;
+import java.util.function.Function;
 
 @ApplicationScoped
 public class PvrService {
@@ -20,8 +23,12 @@ public class PvrService {
     @CacheName("program")
     Cache cache;
 
+    @Inject
+    private ProgramRepository repository;
+
     private Uni<Program> getProgram(String id) {
-        return cache.get(id, Program::findById);
+        return cache.get(id, k -> repository.findById(new ObjectId(k)))
+                .flatMap(Function.identity());
     }
 
     public Uni<String> getMPDUrl(String host, String token, String id, String channel) {

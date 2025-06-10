@@ -6,10 +6,12 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import quantum.music.model.Channel;
+import quantum.music.repository.ChannelRepository;
 
 import java.net.URI;
 import java.net.URL;
 import java.util.Base64;
+import java.util.function.Function;
 
 @ApplicationScoped
 public class LiveService {
@@ -17,11 +19,15 @@ public class LiveService {
     private final Base64.Decoder base64Decoder = Base64.getDecoder();
 
     @Inject
-    @CacheName("chanel")
+    @CacheName("channel")
     Cache cache;
 
+    @Inject
+    ChannelRepository repository;
+
     private Uni<Channel> getChannel(String channel) {
-        return cache.get(channel, Channel::findByCode);
+        return cache.get(channel, k -> repository.findByCode(k))
+            .flatMap(Function.identity());
     }
 
     public Uni<String> getMPDUrl(String host, String token, String channel) {

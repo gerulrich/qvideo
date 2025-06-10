@@ -4,88 +4,71 @@ import io.quarkus.cache.Cache;
 import io.smallrye.mutiny.Uni;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 import quantum.music.model.Channel;
 
 import java.util.Base64;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.MockitoAnnotations.openMocks;
 
+@ExtendWith(MockitoExtension.class)
 class LiveServiceTest {
 
     @InjectMocks
-    private LiveService liveService = new LiveService();
-    private AutoCloseable closeable;
+    private LiveService liveService;
     @Mock
     private Cache cache;
-
-    @BeforeEach
-    void setUp() {
-        closeable = openMocks(this);
-        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
-            String channelCode = invocation.getArgument(0);
-            Function<String, Channel> function = invocation.getArgument(1);
-            return Uni.createFrom().item(function.apply(channelCode));
-        });
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        if (closeable != null) {
-            closeable.close();
-        }
-    }
 
     @Test
     void testGetMPDUrl_ChannelFound() {
         String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
-        String token = "token123/";
-        String channelCode = "ch1";
-        Channel mockChannel = new Channel();
-        mockChannel.url = "https://domain.com/path/to/ch1.mpd";
+        String token = "token123";
+        String code = "ch1";
 
-        try (MockedStatic<Channel> mocked = mockStatic(Channel.class)) {
-            mocked.when(() -> Channel.findByCode(channelCode)).thenReturn(mockChannel);
+        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
+            Channel channel = new Channel();
+            channel.url = "https://domain.com/path/to/ch1.mpd";
+            channel.code = code;
+            return Uni.createFrom().item(Uni.createFrom().item(channel));
+        });
 
-            Uni<String> result = liveService.getMPDUrl(host, token, channelCode);
-            assertEquals("https://domain.com/token123//path/to/ch1.mpd", result.await().indefinitely());
-        }
+        Uni<String> result = liveService.getMPDUrl(host, token, code);
+        assertEquals("https://domain.com/token123/path/to/ch1.mpd", result.await().indefinitely());
     }
+
 
     @Test
     void testGetMPDUrl_ChannelNotFound() {
         String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
-        String token = "token123/";
-        String channelCode = "notfound";
+        String token = "token123";
+        String code = "notfound";
 
-        try (MockedStatic<Channel> mocked = mockStatic(Channel.class)) {
-            mocked.when(() -> Channel.findByCode(channelCode)).thenReturn(null);
+        when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
 
-            Uni<String> result = liveService.getMPDUrl(host, token, channelCode);
-            assertThrows(Exception.class, () -> result.await().indefinitely());
-        }
+        Uni<String> result = liveService.getMPDUrl(host, token, code);
+        assertThrows(Exception.class, () -> result.await().indefinitely());
     }
 
     @Test
     void testGetVideoUrl_ChannelFound() {
         String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
-        String token = "token123/";
-        String channelCode = "ch1";
+        String token = "token123";
+        String code = "ch1";
         String file = "seg1";
-        Channel mockChannel = new Channel();
-        mockChannel.url = "https://domain.com/path/to/ch1.mpd";
 
-        try (MockedStatic<Channel> mocked = mockStatic(Channel.class)) {
-            mocked.when(() -> Channel.findByCode(channelCode)).thenReturn(mockChannel);
+        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
+            Channel channel = new Channel();
+            channel.url = "https://domain.com/path/to/ch1.mpd";
+            channel.code = code;
+            return Uni.createFrom().item(Uni.createFrom().item(channel));
+        });
 
-            Uni<String> result = liveService.getVideoUrl(host, token, channelCode, file);
-            assertEquals("https://domain.com/token123//path/to/ch1-avc1_seg1.mp4", result.await().indefinitely());
-        }
+        Uni<String> result = liveService.getVideoUrl(host, token, code, file);
+        assertEquals("https://domain.com/token123/path/to/ch1-avc1_seg1.mp4", result.await().indefinitely());
     }
 
     @Test
@@ -95,28 +78,28 @@ class LiveServiceTest {
         String channelCode = "ch1";
         String file = "seg1";
 
-        try (MockedStatic<Channel> mocked = mockStatic(Channel.class)) {
-            mocked.when(() -> Channel.findByCode(channelCode)).thenReturn(null);
-            Uni<String> result = liveService.getVideoUrl(host, token, channelCode, file);
-            assertThrows(Exception.class, () -> result.await().indefinitely());
-        }
+        when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
+        Uni<String> result = liveService.getVideoUrl(host, token, channelCode, file);
+        assertThrows(Exception.class, () -> result.await().indefinitely());
     }
 
     @Test
     void testGetAudioUrl_ChannelFound() {
         String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
         String token = "token123/";
-        String channelCode = "ch1";
+        String code = "ch1";
         String file = "seg1";
-        Channel mockChannel = new Channel();
-        mockChannel.url = "https://domain.com/path/to/ch1.mpd";
 
-        try (MockedStatic<Channel> mocked = mockStatic(Channel.class)) {
-            mocked.when(() -> Channel.findByCode(channelCode)).thenReturn(mockChannel);
+        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
+            Channel channel = new Channel();
+            channel.url = "https://domain.com/path/to/ch1.mpd";
+            channel.code = code;
+            return Uni.createFrom().item(Uni.createFrom().item(channel));
+        });
 
-            Uni<String> result = liveService.getAudioUrl(host, token, channelCode, file);
-            assertEquals("https://domain.com/token123//path/to/ch1-mp4a_seg1.mp4", result.await().indefinitely());
-        }
+
+        Uni<String> result = liveService.getAudioUrl(host, token, code, file);
+        assertEquals("https://domain.com/token123//path/to/ch1-mp4a_seg1.mp4", result.await().indefinitely());
     }
 
     @Test
@@ -126,11 +109,8 @@ class LiveServiceTest {
         String channelCode = "ch1";
         String file = "seg1";
 
-        try (MockedStatic<Channel> mocked = mockStatic(Channel.class)) {
-            mocked.when(() -> Channel.findByCode(channelCode)).thenReturn(null);
-
-            Uni<String> result = liveService.getAudioUrl(host, token, channelCode, file);
-            assertThrows(Exception.class, () -> result.await().indefinitely());
-        }
+        when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
+        Uni<String> result = liveService.getAudioUrl(host, token, channelCode, file);
+        assertThrows(Exception.class, () -> result.await().indefinitely());
     }
 }
