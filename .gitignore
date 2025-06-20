@@ -28,4 +28,4 @@ replay_pid*
 target/*
 *.iml
 
-secret.jwks
+secret.jwk
