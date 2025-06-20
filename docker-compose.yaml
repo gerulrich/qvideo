@@ -1,0 +1,9 @@
+services:
+  qvideo:
+    image: qvideo:test
+    ports:
+      - "8080:8080"
+    env_file:
+      - src/main/resources/env.local
+    volumes:
+      - ./src/main/resources/secret.jwk:/work/secret.jwk:ro
