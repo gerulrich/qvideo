@@ -29,3 +29,4 @@ target/*
 *.iml
 
 secret.jwk
+env.local
