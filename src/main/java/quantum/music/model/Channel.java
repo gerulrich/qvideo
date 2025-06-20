@@ -1,16 +1,25 @@
 package quantum.music.model;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
-import io.quarkus.mongodb.panache.PanacheMongoEntity;
+import org.bson.codecs.pojo.annotations.BsonProperty;
+import org.bson.types.ObjectId;
 
 @MongoEntity(collection="channels")
-public class Channel extends PanacheMongoEntity {
-
+public class Channel {
+    public ObjectId id;
+    public String name;
+    public Integer number;
     public String code;
     public String url;
-
-    public static Channel findByCode(String code) {
-        return find("code", code).firstResult();
-    }
+    public String logo;
+    public String category;
+    public String plan;
+    public Integer level;
+    public String egp;
+    public boolean enabled;
+    public String epg;
+    public boolean proxy;
+    @BsonProperty("_drm")
+    public DrmConfig drm;
 }
 

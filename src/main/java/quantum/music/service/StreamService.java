@@ -13,12 +13,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
+import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
-import quantum.music.model.Channel;
-import quantum.music.model.Program;
+import quantum.music.repository.ChannelRepository;
+import quantum.music.repository.ProgramRepository;
 
 import java.util.Base64;
-import java.util.Optional;
 
 @ApplicationScoped
 public class StreamService {
@@ -34,12 +34,11 @@ public class StreamService {
     private HttpClient httpClient;
     private Base64.Encoder base64Encoder;
 
-    public StreamService(Vertx vertx) {
-        this.vertx = vertx;
-    }
+    @Inject
+    private ChannelRepository repository;
 
-    public StreamService() {
-    }
+    @Inject
+    private ProgramRepository programRepository;
 
     @PostConstruct
     void init() {
@@ -49,8 +48,8 @@ public class StreamService {
 
     public Uni<String> getPvrManifestUrl(String id, String channel) {
         LOG.infof("Channel URL: %s", channel);
-        return Optional.ofNullable(Program.findById(id))
-                .map(program -> httpClient.request(
+        return programRepository.findById(new ObjectId(id))
+                .flatMap(program -> httpClient.request(
                                 new RequestOptions()
                                         .setMethod(HttpMethod.GET)
                                         .setAbsoluteURI(program.url)
@@ -67,32 +66,31 @@ public class StreamService {
                             String token = location.split("/")[3];
                             String host = base64Encoder.encodeToString(location.split("/")[2].getBytes());
                             return String.format(PVR_MANIFEST_URL, host, token, id, channel);
-                        }))
-                .orElse(Uni.createFrom().failure(new WebApplicationException("Channel not found", 404)));
+                        }));
     }
 
     public Uni<String> getManifestRedirect(String channel) {
         LOG.infof("Channel URL: %s", channel);
-        return Optional.ofNullable(Channel.findByCode(channel))
-                .map(c -> httpClient.request(
-                                new RequestOptions()
-                                        .setMethod(HttpMethod.GET)
-                                        .setAbsoluteURI(c.url)
-                                        .setHeaders(
-                                                MultiMap.caseInsensitiveMultiMap()
-                                                        .add("User-Agent", USER_AGENT)
-                                                        .add("X-Flow-Origin", "AndroidTV")
-                                        )
-                        )
-                        .onItem().transformToUni(req -> req.send())
-                        .onFailure().retry().atMost(3)
-                        .onItem().transform(resp -> {
-                            String location = resp.headers().get(HttpHeaders.LOCATION);
-                            String token = location.split("/")[3];
-                            String host = base64Encoder.encodeToString(location.split("/")[2].getBytes());
-                            return String.format(MANIFEST_REDIRECT_URL, host, token, c.code);
-                        }))
-                .orElse(Uni.createFrom().failure(new WebApplicationException("Channel not found", 404)));
+        return repository.findByCode(channel).flatMap(c ->
+                httpClient.request(
+                        new RequestOptions()
+                                .setMethod(HttpMethod.GET)
+                                .setAbsoluteURI(c.url)
+                                .setHeaders(
+                                        MultiMap.caseInsensitiveMultiMap()
+                                                .add("User-Agent", USER_AGENT)
+                                                .add("X-Flow-Origin", "AndroidTV")
+                                )
+                )
+                .onItem().transformToUni(req -> req.send())
+                .onFailure().retry().atMost(3)
+                .onItem().transform(resp -> {
+                    String location = resp.headers().get(HttpHeaders.LOCATION);
+                    String token = location.split("/")[3];
+                    String host = base64Encoder.encodeToString(location.split("/")[2].getBytes());
+                    return String.format(MANIFEST_REDIRECT_URL, host, token, c.code);
+                })
+        );
     }
 
     /**

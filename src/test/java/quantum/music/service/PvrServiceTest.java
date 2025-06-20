@@ -3,58 +3,42 @@ package quantum.music.service;
 import io.quarkus.cache.Cache;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 import quantum.music.model.Program;
 
 import java.util.Base64;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.MockitoAnnotations.openMocks;
 
+@ExtendWith(MockitoExtension.class)
 class PvrServiceTest {
 
     @InjectMocks
-    private PvrService pvrService = new PvrService();
-    private AutoCloseable closeable;
+    private PvrService pvrService;
     @Mock
     private Cache cache;
 
-    @BeforeEach
-    void setUp() {
-        closeable = openMocks(this);
-        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
-            String channelCode = invocation.getArgument(0);
-            Function<String, Program> function = invocation.getArgument(1);
-            return Uni.createFrom().item(function.apply(channelCode));
-        });
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        if (closeable != null) {
-            closeable.close();
-        }
-    }
 
     @Test
     void testGetMPDUrl_ProgramFound() {
         String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
-        String token = "token123/";
-        String id = "prog1";
-        String channel = "ch1";
-        Program mockProgram = new Program();
-        mockProgram.url = "https://domain.com/path/to/ch1.mpd";
+        String token = "token123";
+        String id = "66ed71d0174ce2b912555115";
+        String code = "ch1";
 
-        try (MockedStatic<Program> mocked = mockStatic(Program.class)) {
-            mocked.when(() -> Program.findById(id)).thenReturn(mockProgram);
+        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
+            Program program = new Program();
+            program.url = "https://domain.com/path/to/ch1.mpd";
+            return Uni.createFrom().item(Uni.createFrom().item(program));
+        });
 
-            Uni<String> result = pvrService.getMPDUrl(host, token, id, channel);
-            assertEquals("https://domain.com/token123//path/to/ch1.mpd", result.await().indefinitely());
-        }
+        Uni<String> result = pvrService.getMPDUrl(host, token, id, code);
+        assertEquals("https://domain.com/token123/path/to/ch1.mpd", result.await().indefinitely());
+
     }
 
     @Test
@@ -64,30 +48,29 @@ class PvrServiceTest {
         String id = "notfound";
         String channel = "ch1";
 
-        try (MockedStatic<Program> mocked = mockStatic(Program.class)) {
-            mocked.when(() -> Program.findById(id)).thenReturn(null);
+        when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
+        Uni<String> result = pvrService.getMPDUrl(host, token, id, channel);
+        assertThrows(Exception.class, () -> result.await().indefinitely());
 
-            Uni<String> result = pvrService.getMPDUrl(host, token, id, channel);
-            assertThrows(Exception.class, () -> result.await().indefinitely());
-        }
     }
 
     @Test
     void testGetVideoUrl_ProgramFound() {
         String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
         String token = "token123/";
-        String id = "prog1";
-        String channel = "ch1";
         String file = "seg1";
-        Program mockProgram = new Program();
-        mockProgram.url = "https://domain.com/path/to/ch1.mpd";
+        String id = "66ed71d0174ce2b912555115";
+        String code = "ch1";
 
-        try (MockedStatic<Program> mocked = mockStatic(Program.class)) {
-            mocked.when(() -> Program.findById(id)).thenReturn(mockProgram);
+        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
+            Program program = new Program();
+            program.url = "https://domain.com/path/to/ch1.mpd";
+            return Uni.createFrom().item(Uni.createFrom().item(program));
+        });
 
-            Uni<String> result = pvrService.getVideoUrl(host, token, id, channel, file);
-            assertEquals("https://domain.com/token123//path/to/ch1-avc1_seg1.mp4", result.await().indefinitely());
-        }
+        Uni<String> result = pvrService.getVideoUrl(host, token, id, code, file);
+        assertEquals("https://domain.com/token123//path/to/ch1-avc1_seg1.mp4", result.await().indefinitely());
+
     }
 
     @Test
@@ -98,30 +81,30 @@ class PvrServiceTest {
         String channel = "ch1";
         String file = "seg1";
 
-        try (MockedStatic<Program> mocked = mockStatic(Program.class)) {
-            mocked.when(() -> Program.findById(id)).thenReturn(null);
+        when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
+        Uni<String> result = pvrService.getVideoUrl(host, token, id, channel, file);
+        assertThrows(Exception.class, () -> result.await().indefinitely());
 
-            Uni<String> result = pvrService.getVideoUrl(host, token, id, channel, file);
-            assertThrows(Exception.class, () -> result.await().indefinitely());
-        }
     }
 
     @Test
     void testGetAudioUrl_ProgramFound() {
         String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
         String token = "token123/";
-        String id = "prog1";
-        String channel = "ch1";
         String file = "seg1";
-        Program mockProgram = new Program();
-        mockProgram.url = "https://domain.com/path/to/ch1.mpd";
 
-        try (MockedStatic<Program> mocked = mockStatic(Program.class)) {
-            mocked.when(() -> Program.findById(id)).thenReturn(mockProgram);
+        String id = "66ed71d0174ce2b912555115";
+        String code = "ch1";
 
-            Uni<String> result = pvrService.getAudioUrl(host, token, id, channel, file);
-            assertEquals("https://domain.com/token123//path/to/ch1-mp4a_seg1.mp4", result.await().indefinitely());
-        }
+        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
+            Program program = new Program();
+            program.url = "https://domain.com/path/to/ch1.mpd";
+            return Uni.createFrom().item(Uni.createFrom().item(program));
+        });
+
+        Uni<String> result = pvrService.getAudioUrl(host, token, id, code, file);
+        assertEquals("https://domain.com/token123//path/to/ch1-mp4a_seg1.mp4", result.await().indefinitely());
+
     }
 
     @Test
@@ -132,11 +115,9 @@ class PvrServiceTest {
         String channel = "ch1";
         String file = "seg1";
 
-        try (MockedStatic<Program> mocked = mockStatic(Program.class)) {
-            mocked.when(() -> Program.findById(id)).thenReturn(null);
+        when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
+        Uni<String> result = pvrService.getAudioUrl(host, token, id, channel, file);
+        assertThrows(Exception.class, () -> result.await().indefinitely());
 
-            Uni<String> result = pvrService.getAudioUrl(host, token, id, channel, file);
-            assertThrows(Exception.class, () -> result.await().indefinitely());
-        }
     }
 }
