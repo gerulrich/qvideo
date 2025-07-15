@@ -7,52 +7,27 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
  * Follow record encapsulates configuration settings for follow operations.
  * Contains references to primary configuration, customer information,
  * and various service endpoints needed for user authentication flow.
+ *
+ * @param primary Primary configuration settings
+ * @param customerId Customer identifier
+ * @param externalId External identifier for integration with other systems
+ * @param analytics Analytics configuration settings
+ * @param prm PRM (Provider Resource Management) host value configuration
+ * @param rs Resource service identifier
+ * @param mscs MSCS (Media Services Control System) host value configuration
+ * @param localizationId Localization identifier for regional settings
+ * @param purchaseAllowed Flag indicating whether purchases are allowed
  */
 @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy.class)
 public record Follow(
-        /**
-         * Primary configuration settings
-         */
         Primary primary,
-
-        /**
-         * Customer identifier
-         */
         String customerId,
-
-        /**
-         * External identifier for integration with other systems
-         */
         String externalId,
-
-        /**
-         * Analytics configuration settings
-         */
         Analytics analytics,
-
-        /**
-         * PRM (Provider Resource Management) host value configuration
-         */
         HostValue prm,
-
-        /**
-         * Resource service identifier
-         */
         String rs,
-
-        /**
-         * MSCS (Media Services Control System) host value configuration
-         */
         HostValue mscs,
-
-        /**
-         * Localization identifier for regional settings
-         */
         String localizationId,
-
-        /**
-         * Flag indicating whether purchases are allowed
-         */
         boolean purchaseAllowed
 ) {
 

@@ -9,56 +9,28 @@ import io.vertx.core.json.JsonObject;
  * and resource links for a specific TV program.
  * <p>
  * This class is immutable and thread-safe.
+ *
+ * @param id ID of the program
+ * @param title Title of the program
+ * @param description Full description of the program content
+ * @param episode Episode title or identifier if the program is part of a series
+ * @param url URL to the program's streaming resource
+ * @param image URL to the program's cover image
+ * @param genre Genre classification of the program
+ * @param duration Duration of the program in minutes
+ * @param start Start time of the program as Unix timestamp (milliseconds)
+ * @param end End time of the program as Unix timestamp (milliseconds)
  */
 public record ProgramGuideItem(
-        /**
-         * Id of the program
-         */
         String id,
-
-        /**
-         * Title of the program
-         */
         String title,
-
-        /**
-         * Full description of the program content
-         */
         String description,
-
-        /**
-         * Episode title or identifier if the program is part of a series
-         */
         String episode,
-
-        /**
-         * URL to the program's streaming resource
-         */
         String url,
-
-        /**
-         * URL to the program's cover image
-         */
         String image,
-
-        /**
-         * Genre classification of the program
-         */
         String genre,
-
-        /**
-         * Duration of the program in minutes
-         */
         Integer duration,
-
-        /**
-         * Start time of the program as Unix timestamp (milliseconds)
-         */
         Long start,
-
-        /**
-         * End time of the program as Unix timestamp (milliseconds)
-         */
         Long end
 ) {
 

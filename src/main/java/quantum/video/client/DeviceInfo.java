@@ -7,72 +7,35 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
  * DeviceInfo record that contains all the device-specific information.
  * This record holds various properties related to the device's hardware,
  * software, and network configuration used for authentication and analytics.
+ *
+ * @param networkType Type of network connection (e.g., "Broadband")
+ * @param playerType Type of media player being used
+ * @param deviceOsVersion Version of the device operating system
+ * @param casId Conditional Access System identifier
+ * @param deviceModel Model name/number of the device
+ * @param mac MAC address of the device
+ * @param deviceName User-friendly name of the device
+ * @param appVersion Version of the application running on the device
+ * @param deviceType Category of device (e.g., "stationary", "mobile")
+ * @param deviceBrand Brand/manufacturer of the device
+ * @param deviceOs Operating system of the device
+ * @param firmwareVersion Version of the device firmware
+ * @param uuid Universally unique identifier for the device
  */
 @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy.class)
 public record DeviceInfo(
-    /**
-     * Type of network connection (e.g., "Broadband")
-     */
     String networkType,
-
-    /**
-     * Type of media player being used
-     */
     String playerType,
-
-    /**
-     * Version of the device operating system
-     */
     String deviceOsVersion,
-
-    /**
-     * Conditional Access System identifier
-     */
     String casId,
-
-    /**
-     * Model name/number of the device
-     */
     String deviceModel,
-
-    /**
-     * MAC address of the device
-     */
     String mac,
-
-    /**
-     * User-friendly name of the device
-     */
     String deviceName,
-
-    /**
-     * Version of the application running on the device
-     */
     String appVersion,
-
-    /**
-     * Category of device (e.g., "stationary", "mobile")
-     */
     String deviceType,
-
-    /**
-     * Brand/manufacturer of the device
-     */
     String deviceBrand,
-
-    /**
-     * Operating system of the device
-     */
     String deviceOs,
-
-    /**
-     * Version of the device firmware
-     */
     String firmwareVersion,
-
-    /**
-     * Universally unique identifier for the device
-     */
     String uuid
 ) {
     /**
