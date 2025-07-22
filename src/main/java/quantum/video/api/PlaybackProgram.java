@@ -25,15 +25,19 @@ public record PlaybackProgram(
         DrmInfo  drm
         ) {
 
-        public PlaybackProgram(Program program, boolean includeDrm) {
+        public PlaybackProgram(Program program) {
+            this(program, null, false);
+        }
+
+        public PlaybackProgram(Program program, String patternUrl, boolean includeDrm) {
             this(
                 program.id,
                 program.title,
                 program.description,
                 program.start.atZone(ZoneId.systemDefault()),
                 program.end.atZone(ZoneId.systemDefault()),
-                program.url != null ? format(
-                        "http://localhost:8080/pvr/manifest/%s/%s",
+                patternUrl != null && program.url != null ? format(
+                        patternUrl,
                         program.id,
                         program.url.substring(program.url.lastIndexOf('/') + 1)
                 ): "",

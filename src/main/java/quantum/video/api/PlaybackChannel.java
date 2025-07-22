@@ -21,21 +21,23 @@ public record PlaybackChannel(
 
 
     public PlaybackChannel(Tuple2<Channel, Program> tuple) {
-        this(tuple.getItem1(), tuple.getItem2(), false);
+        this(tuple.getItem1(), tuple.getItem2(), null, false);
     }
 
-    public PlaybackChannel(Tuple2<Channel, Program> tuple, boolean includeDrm) {
-        this(tuple.getItem1(), tuple.getItem2(), includeDrm);
+    public PlaybackChannel(Tuple2<Channel, Program> tuple, String urlPattern, boolean includeDrm) {
+        this(tuple.getItem1(), tuple.getItem2(), urlPattern, includeDrm);
     }
 
-    public PlaybackChannel(Channel channel, Program program, boolean includeDrm) {
+    public PlaybackChannel(Channel channel, Program program, String urlPattern, boolean includeDrm) {
         this(
             channel.id,
             channel.name,
             channel.number,
             channel.logo,
             channel.category,
-            channel.proxy ? String.format("http://localhost:8080/live/manifest/%s.mpd", channel.code) : channel.url,
+            urlPattern != null
+                ? channel.proxy ? String.format(urlPattern, channel.code) : channel.url
+                : null,
             program != null ?
                 new NowPlaying(
                     program.id,

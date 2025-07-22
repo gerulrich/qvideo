@@ -12,49 +12,20 @@ import quantum.video.model.Channel;
 
 import java.util.Base64;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class LiveServiceTest {
+class ChannelSegmentServiceTest {
 
     @InjectMocks
-    private LiveService liveService;
+    private ChannelSegmentService service;
     @Mock
     private Cache cache;
 
     @Test
-    void testGetMPDUrl_ChannelFound() {
-        String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
-        String token = "token123";
-        String code = "ch1";
-
-        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
-            Channel channel = new Channel();
-            channel.url = "https://domain.com/path/to/ch1.mpd";
-            channel.code = code;
-            return Uni.createFrom().item(Uni.createFrom().item(channel));
-        });
-
-        Uni<String> result = liveService.getMPDUrl(host, token, code);
-        assertEquals("https://domain.com/token123/path/to/ch1.mpd", result.await().indefinitely());
-    }
-
-
-    @Test
-    void testGetMPDUrl_ChannelNotFound() {
-        String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
-        String token = "token123";
-        String code = "notfound";
-
-        when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
-
-        Uni<String> result = liveService.getMPDUrl(host, token, code);
-        assertThrows(Exception.class, () -> result.await().indefinitely());
-    }
-
-    @Test
-    void testGetVideoUrl_ChannelFound() {
+    void testGetVideoSegmentFound() {
         String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
         String token = "token123";
         String code = "ch1";
@@ -67,19 +38,19 @@ class LiveServiceTest {
             return Uni.createFrom().item(Uni.createFrom().item(channel));
         });
 
-        Uni<String> result = liveService.getVideoUrl(host, token, code, file);
+        Uni<String> result = service.getVideoSegment(host, token, code, file);
         assertEquals("https://domain.com/token123/path/to/ch1-avc1_seg1.mp4", result.await().indefinitely());
     }
 
     @Test
-    void testGetVideoUrl_ChannelNotFound() {
+    void testGetVideoSegmentNotFound() {
         String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
         String token = "token123/";
         String channelCode = "ch1";
         String file = "seg1";
 
         when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
-        Uni<String> result = liveService.getVideoUrl(host, token, channelCode, file);
+        Uni<String> result = service.getVideoSegment(host, token, channelCode, file);
         assertThrows(Exception.class, () -> result.await().indefinitely());
     }
 
@@ -98,7 +69,7 @@ class LiveServiceTest {
         });
 
 
-        Uni<String> result = liveService.getAudioUrl(host, token, code, file);
+        Uni<String> result = service.getAudioSegment(host, token, code, file);
         assertEquals("https://domain.com/token123//path/to/ch1-mp4a_seg1.mp4", result.await().indefinitely());
     }
 
@@ -110,7 +81,7 @@ class LiveServiceTest {
         String file = "seg1";
 
         when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
-        Uni<String> result = liveService.getAudioUrl(host, token, channelCode, file);
+        Uni<String> result = service.getAudioSegment(host, token, channelCode, file);
         assertThrows(Exception.class, () -> result.await().indefinitely());
     }
 }

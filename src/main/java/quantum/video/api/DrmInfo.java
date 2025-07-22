@@ -3,7 +3,6 @@ package quantum.video.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import quantum.video.model.DrmConfig;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,8 +16,11 @@ public record DrmInfo(
         this(
                 config.type(),
                 config.licenseUrl(),
-                Optional.ofNullable(config.keys()).orElse(Collections.emptyList()).stream()
-                .map(key -> new DrmKey(key.kid(), key.key()))
-                .toList());
+                Optional.ofNullable(config.keys())
+                        .map(list -> list.stream()
+                                .map(key -> new DrmKey(key.kid(), key.key()))
+                                .toList())
+                        .orElse(null)
+        );
     }
 }

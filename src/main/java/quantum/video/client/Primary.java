@@ -10,7 +10,5 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
  * @param pin PIN value for authentication or parental controls
  */
 @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy.class)
-public record Primary(
-        int pin
-) {
+public record Primary(int pin) {
 }

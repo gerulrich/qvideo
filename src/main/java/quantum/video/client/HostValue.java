@@ -10,7 +10,5 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
  * @param host Host address or endpoint URL
  */
 @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy.class)
-public record HostValue(
-        String host
-) {
+public record HostValue(String host) {
 }
