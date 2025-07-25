@@ -104,6 +104,7 @@ public class ChannelSegmentService extends AbstractStreamService {
      */
     public Uni<String> getVideoSegment(String host, String token, String channel, String file) {
         return getChannel(channel)
+                .onItem().ifNull().failWith(() -> new NotFoundException("Channel segment not found"))
                 .flatMap(ch -> extractPathBetweenDomainAndFile(ch.url))
                 .map(path -> formatVideoUrl(host, token, path, channel, file));
     }

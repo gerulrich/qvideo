@@ -7,6 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
@@ -87,7 +88,8 @@ public class ProgramManifestService extends AbstractStreamService {
      */
     public Uni<String> getManifestRedirectUrl(String host, String token, String id, String channel) {
         return getProgram(id)
-            .flatMap(program -> extractPathBetweenDomainAndFile(program.url))
+                .onItem().ifNull().failWith(() -> new NotFoundException("Manifest not found"))
+                .flatMap(program -> extractPathBetweenDomainAndFile(program.url))
             .map(path -> formatMpdUrl(host, token, channel, path));
     }
 
@@ -114,6 +116,7 @@ public class ProgramManifestService extends AbstractStreamService {
     public Uni<String> getManifestRedirectUrl(String id, String channel) {
         LOG.infof("Channel URL: %s", channel);
         return getProgram(id)
+            .onItem().ifNull().failWith(() -> new NotFoundException("Manifest not found"))
             .flatMap(program ->
                 get(program.url)
                 .onItem().transformToUni(req -> req.send())

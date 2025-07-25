@@ -71,7 +71,6 @@ public class ProgramSegmentResource {
         LOG.infof("Request audio segment for program: %s-mp4a_%s.mp4", channel, file);
         return service.getAudioSegment(host, token, id, channel, file)
             .onFailure().invoke(ex -> LOG.warnf("Failed to get audio segment for channel: %s", channel, ex))
-            .onItem().ifNull().failWith(() -> new NotFoundException("Audio segment not found"))
             .onItem().transformToMulti(service::stream);
     }
 
@@ -111,7 +110,6 @@ public class ProgramSegmentResource {
         LOG.infof("Request video segment for program: %s-avc1_%s.mp4", channel, file);
         return service.getVideoSegment(host, token, id, channel, file)
             .onFailure().invoke(ex -> LOG.warnf("Failed to get video segment for program: %s", channel, ex))
-            .onItem().ifNull().failWith(() -> new NotFoundException("Video segment not found"))
             .onItem().transformToMulti(service::stream);
     }
 }

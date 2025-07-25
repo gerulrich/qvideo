@@ -67,7 +67,7 @@ class ProgramSegmentResourceTest {
         // Given
         when(service.getAudioSegment(anyString(), anyString(), anyString(), anyString(), anyString())).
         thenReturn(
-            Uni.createFrom().nullItem()
+            Uni.createFrom().failure(new NotFoundException("Audio segment not found"))
         );
 
         // When & Then
@@ -122,7 +122,7 @@ class ProgramSegmentResourceTest {
         // Given
         when(service.getVideoSegment(anyString(), anyString(), anyString(), anyString(), anyString())).
         thenReturn(
-            Uni.createFrom().nullItem()
+            Uni.createFrom().failure(new NotFoundException("Video segment not found"))
         );
 
         // When & Then

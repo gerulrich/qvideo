@@ -61,7 +61,6 @@ public class ProgramManifestResource {
         LOG.infof("Request for program manifest (url redirect): %s", channel);
         return service.getManifestRedirectUrl(id, channel)
             .onFailure().invoke(() -> LOG.warnf("Failed to redirect to program manifest for channel: %s", channel))
-            .onItem().ifNull().failWith(() -> new NotFoundException("Program not found"))
             .onItem().transform(url -> Response.temporaryRedirect(URI.create(url)).build());
     }
 
@@ -96,7 +95,6 @@ public class ProgramManifestResource {
         LOG.infof("Request for program manifest: %s", channel);
         return service.getManifestRedirectUrl(host, token, id, channel)
             .onFailure().invoke(ex -> LOG.warnf("Failed to get program manifest URL for channel: %s", channel, ex))
-            .onItem().ifNull().failWith(() -> new NotFoundException("Program not found"))
             .onItem().transformToMulti(service::stream);
     }
 }

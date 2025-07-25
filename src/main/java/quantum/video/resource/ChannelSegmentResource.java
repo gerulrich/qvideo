@@ -24,10 +24,6 @@ import quantum.video.service.ChannelSegmentService;
  * </ul>
  * </p>
  * <p>
- * This class extends {@link AbstractSecureResource} to leverage authentication and
- * authorization functionality for protected content streams.
- * </p>
- * <p>
  * Note: The actual segment data is retrieved by the {@link ChannelSegmentService}
  * which this resource delegates to.
  * </p>

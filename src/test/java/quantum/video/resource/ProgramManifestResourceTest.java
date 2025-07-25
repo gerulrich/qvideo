@@ -59,7 +59,7 @@ class ProgramManifestResourceTest {
         // Given
         when(service.getManifestRedirectUrl(anyString(), anyString())).
         thenReturn(
-            Uni.createFrom().nullItem()
+            Uni.createFrom().failure(new NotFoundException("Manifest not found"))
         );
 
         // When & Then
@@ -114,7 +114,7 @@ class ProgramManifestResourceTest {
         // Given
         when(service.getManifestRedirectUrl(anyString(), anyString(), anyString(), anyString())).
         thenReturn(
-            Uni.createFrom().nullItem()
+            Uni.createFrom().failure(new NotFoundException("Manifest not found"))
         );
 
         // When & Then
