@@ -5,6 +5,7 @@ import io.quarkus.cache.CacheName;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.jboss.logging.Logger;
 import quantum.video.model.Channel;
@@ -67,6 +68,7 @@ public class ChannelManifestService extends AbstractStreamService {
     public Uni<String> getManifestRedirectUrl(String channel) {
         LOG.infof("Channel URL: %s", channel);
         return getChannel(channel)
+            .onItem().ifNull().failWith(() -> new NotFoundException("Manifest not found"))
             .flatMap(ch ->
                 get(ch.url)
                 .onItem().transformToUni(req -> req.send())
@@ -82,6 +84,7 @@ public class ChannelManifestService extends AbstractStreamService {
 
     public Uni<String> getManifestUrl(String host, String token, String channel) {
         return getChannel(channel)
+                .onItem().ifNull().failWith(() -> new NotFoundException("Manifest not found"))
                 .flatMap(ch -> extractPathBetweenDomainAndFile(ch.url))
                 .map(path -> formatMpdUrl(host, token, channel, path));
     }

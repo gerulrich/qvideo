@@ -70,7 +70,6 @@ public class ChannelSegmentResource extends AbstractStreamService {
         LOG.infof("Request for audio segment: channel=%s, file=%s", channel, file);
         return service.getAudioSegment(host, token, channel, file)
             .onFailure().invoke(ex -> LOG.warnf("Failed to get audio segment for channel: %s", channel, ex))
-            .onItem().ifNull().failWith(() -> new NotFoundException("Video segment not found"))
             .onItem().transformToMulti(service::stream);
     }
 
@@ -104,7 +103,6 @@ public class ChannelSegmentResource extends AbstractStreamService {
         LOG.infof("Request for video segment: channel=%s, file=%s", channel, file);
         return service.getVideoSegment(host, token, channel, file)
                 .onFailure().invoke(ex -> LOG.warnf("Failed to get video segment for channel: %s", channel, ex))
-                .onItem().ifNull().failWith(() -> new NotFoundException("Video segment not found"))
                 .onItem().transformToMulti(service::stream);
     }
 }

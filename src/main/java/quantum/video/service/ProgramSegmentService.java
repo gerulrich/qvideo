@@ -7,6 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.NotFoundException;
 import org.bson.types.ObjectId;
 import quantum.video.model.Program;
 import quantum.video.repository.ProgramRepository;
@@ -76,6 +77,7 @@ public class ProgramSegmentService extends AbstractStreamService {
      */
     public Uni<String> getVideoSegment(String host, String token, String id, String channel, String file) {
         return getProgram(id)
+            .onItem().ifNull().failWith(new NotFoundException("Program not found"))
             .flatMap(program -> extractPathBetweenDomainAndFile(program.url))
             .map(path -> formatVideoUrl(host, token, path, channel, file));
     }
@@ -105,6 +107,7 @@ public class ProgramSegmentService extends AbstractStreamService {
      */
     public Uni<String> getAudioSegment(String host, String token, String id, String channel, String file) {
         return getProgram(id)
+            .onItem().ifNull().failWith(new NotFoundException("Program not found"))
             .flatMap(program -> extractPathBetweenDomainAndFile(program.url))
             .map(path -> formatAudioUrl(host, token, path, channel, file));
     }

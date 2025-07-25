@@ -123,6 +123,7 @@ public class PlaybackChannelService {
     public Uni<Tuple2<Channel, Program>> getPlaybackChannel(String id, int level) {
         return channelRepository.find(PLAYBACK_CHANNEL_BY_ID_QUERY, new ObjectId(id), level)
             .firstResult()
+            .onItem().ifNull().failWith(() -> new NotFoundException("Channel not found"))
             .flatMap(this::getProgramByChannel);
     }
 

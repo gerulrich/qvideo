@@ -374,13 +374,13 @@ public class PlaybackChannelResourceTest {
     }
 
     @Test
-    @DisplayName("Should return 404 NotFound when playback channel does not exist")
-    public void testGetPlaybackChannelNotFound() {
-        // Given - preparamos los mocks y datos
+    @DisplayName("Should fail with NotFoundException when playback channel is not found")
+    public void getPlaybackChannel_notFound_throwsException() {
+        // Given
         when(ctx.getUserPrincipal()).thenReturn(jwt);
         when(jwt.claim(anyString())).thenReturn(Optional.of("2"));
         when(service.getPlaybackChannel(anyString(), anyInt())).
-        thenReturn(Uni.createFrom().nullItem());
+        thenReturn(Uni.createFrom().failure(new NotFoundException("Channel not found")));
 
         // When - ejecutamos la acción
         resource.getPlaybackChannel("60d5f484b3f1c8b1a4e8e0a1", ctx)

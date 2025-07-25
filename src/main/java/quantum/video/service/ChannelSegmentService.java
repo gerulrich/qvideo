@@ -7,6 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.NotFoundException;
 import quantum.video.model.Channel;
 import quantum.video.repository.ChannelRepository;
 
@@ -73,6 +74,7 @@ public class ChannelSegmentService extends AbstractStreamService {
      */
     public Uni<String> getAudioSegment(String host, String token, String channel, String file) {
         return  getChannel(channel)
+                .onItem().ifNull().failWith(() -> new NotFoundException("Channel segment not found"))
                 .flatMap(ch -> extractPathBetweenDomainAndFile(ch.url))
                 .map(path -> formatAudioUrl(host, token, path, channel, file));
     }

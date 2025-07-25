@@ -81,8 +81,6 @@ public class PlaybackChannelResource extends AbstractSecureResource {
     public Uni<PlaybackChannel> getPlaybackChannel(@PathParam("id") String id, @Context SecurityContext ctx) {
         LOG.infof("Request for playback channel: %s", id);
         return service.getPlaybackChannel(id, getUserLevel(ctx))
-            .onItem().ifNull().failWith(() -> new NotFoundException("Channel not found"))
             .onItem().transform(tuple -> new PlaybackChannel(tuple, manifestUrlPattern, true));
-
     }
 }

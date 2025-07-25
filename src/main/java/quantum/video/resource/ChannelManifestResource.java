@@ -65,9 +65,7 @@ public class ChannelManifestResource {
         LOG.infof("Request for channel manifest (url redirect): %s", channel);
         return service.getManifestRedirectUrl(channel)
             .onFailure().invoke(ex -> LOG.warnf("Failed to redirect to manifest for channel: %s", channel, ex))
-            .onItem().ifNull().failWith(() -> new NotFoundException("Channel not found"))
             .onItem().transform(url -> Response.temporaryRedirect(URI.create(url)).build());
-
     }
 
     /**
@@ -94,7 +92,6 @@ public class ChannelManifestResource {
         LOG.infof("Request for channel manifest: %s", channel);
         return service.getManifestUrl(host, token, channel)
             .onFailure().invoke(ex -> LOG.warnf("Failed to get manifest URL for channel: %s", channel, ex))
-            .onItem().ifNull().failWith(() -> new NotFoundException("Channel not found"))
             .onItem().transformToMulti(service::stream);
     }
 }

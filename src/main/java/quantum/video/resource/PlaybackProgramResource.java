@@ -90,7 +90,6 @@ public class PlaybackProgramResource extends AbstractSecureResource {
     public Uni<PlaybackProgram> getPlaybackProgram(@PathParam("id") String id, @Context SecurityContext ctx) {
         LOG.infof("Request for playback program: %s", id);
         return service.getProgram(id, getUserLevel(ctx))
-            .onItem().ifNull().failWith(() -> new NotFoundException("Channel not found"))
             .onItem().transform(program -> new PlaybackProgram(program, manifestPatternUrl, true)
         );
     }

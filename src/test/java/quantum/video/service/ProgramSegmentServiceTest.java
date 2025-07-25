@@ -2,6 +2,8 @@ package quantum.video.service;
 
 import io.quarkus.cache.Cache;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -72,21 +74,24 @@ class ProgramSegmentServiceTest {
             return Uni.createFrom().item(Uni.createFrom().item(program));
         });
 
-        Uni<String> result = service.getAudioSegment(host, token, id, code, file);
-        assertEquals("https://domain.com/token123/path/to/ch1-mp4a_seg1.mp4", result.await().indefinitely());
+        String result = service.getAudioSegment(host, token, id, code, file)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .assertCompleted()
+            .getItem();
+
+        assertEquals("https://domain.com/token123/path/to/ch1-mp4a_seg1.mp4", result);
 
     }
 
     @Test
     void testGetAudioUrl_ProgramNotFound() {
-        String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
-        String token = "token123";
-        String id = "notfound";
-        String channel = "ch1";
-        String file = "seg1";
-
         when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
-        Uni<String> result = service.getAudioSegment(host, token, id, channel, file);
-        assertThrows(Exception.class, () -> result.await().indefinitely());
+
+        String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
+        service.getAudioSegment(host, "token123", "66ed71d0174ce2b912555115", "ch1", "seg1")
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .assertFailedWith(NotFoundException.class);
     }
 }

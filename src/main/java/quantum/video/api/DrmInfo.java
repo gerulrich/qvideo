@@ -14,13 +14,11 @@ public record DrmInfo(
 {
     public DrmInfo(DrmConfig config) {
         this(
-                config.type(),
-                config.licenseUrl(),
-                Optional.ofNullable(config.keys())
-                        .map(list -> list.stream()
-                                .map(key -> new DrmKey(key.kid(), key.key()))
-                                .toList())
-                        .orElse(null)
+            config.type(),
+            config.licenseUrl(),
+            Optional.ofNullable(config.keys())
+                .map(list -> list.stream().map(key -> new DrmKey(key.kid(), key.key())).toList())
+                .orElse(null)
         );
     }
 }
