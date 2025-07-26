@@ -8,6 +8,21 @@ import quantum.video.model.Program;
 
 import java.time.ZoneId;
 
+/**
+ * Data Transfer Object representing a channel available for playback.
+ * <p>
+ * Contains channel metadata, streaming URL, DRM info, and the currently playing program.
+ * </p>
+ *
+ * @param id         Unique identifier of the channel
+ * @param name       Name of the channel
+ * @param number     Channel number
+ * @param logo       Logo URL for the channel
+ * @param category   Category or genre of the channel
+ * @param url        Streaming URL for the channel
+ * @param nowPlaying Information about the currently playing program
+ * @param drm        DRM information for protected content
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record PlaybackChannel(
         ObjectId id,

@@ -10,6 +10,23 @@ import java.time.ZonedDateTime;
 
 import static java.lang.String.format;
 
+/**
+ * Data Transfer Object representing a program available for playback.
+ * <p>
+ * This record is used as an API response for program playback information, including
+ * metadata, timing, streaming URL, and DRM details.
+ * </p>
+ *
+ * @param id         Unique identifier of the program
+ * @param title      Title of the program
+ * @param description Description of the program
+ * @param startTime  Start time of the program (ZonedDateTime, ISO 8601)
+ * @param endTime    End time of the program (ZonedDateTime, ISO 8601)
+ * @param url        Streaming URL for playback
+ * @param episode    Episode information, if applicable
+ * @param genre      Genre of the program
+ * @param drm        DRM information for protected content
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record PlaybackProgram(
         ObjectId id,
