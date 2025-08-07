@@ -15,7 +15,7 @@
         <quarkus.platform.version>3.24.5</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.2</surefire-plugin.version>
-        <mockito.version>5.16.1</mockito.version>
+        <mockito.version>5.18.0</mockito.version>
     </properties>
 
     <dependencyManagement>
