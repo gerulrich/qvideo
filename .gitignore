@@ -28,5 +28,11 @@ replay_pid*
 target/*
 *.iml
 
+# OS
+.DS_Store
+.DS_Store?
+._*
+
+# Application specific
 secret.jwk
 env.local
