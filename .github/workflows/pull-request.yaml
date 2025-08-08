@@ -36,21 +36,6 @@ jobs:
         run: mvn --batch-mode jacoco:report
         continue-on-error: true
 
-      - name: Run SonarQube analysis
-        if: ${{ secrets.SONAR_TOKEN != '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn --batch-mode sonar:sonar \
-            -Dsonar.projectKey=qvideo \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
-            -Dsonar.pullrequest.branch=${{ github.head_ref }} \
-            -Dsonar.pullrequest.base=${{ github.base_ref }}
-        continue-on-error: true
-
       - name: Check for security vulnerabilities
         run: mvn --batch-mode dependency:check
         continue-on-error: true
@@ -84,13 +69,7 @@ jobs:
           fi
           echo "📊 Code Coverage: Generated (JaCoCo)" >> reports/summary.md
           echo "🔍 Static Analysis: SpotBugs + Checkstyle" >> reports/summary.md
-          echo "🔒 Security Scan: OWASP Dependency Check" >> reports/summary.md
-          if [ "${{ secrets.SONAR_TOKEN }}" != "" ]; then
-            echo "📝 SonarQube Analysis: Enabled" >> reports/summary.md
-          else
-            echo "📝 SonarQube Analysis: Skipped (no token configured)" >> reports/summary.md
-          fi
-          
+          echo "🔒 Security Scan: OWASP Dependency Check" >> reports/summary.md        
           # Create detailed warnings file
           echo "## Detailed Warnings" > reports/warnings.md
           echo "" >> reports/warnings.md
@@ -129,12 +108,6 @@ jobs:
           echo "📊 Code Coverage: Generated (JaCoCo)" >> $GITHUB_STEP_SUMMARY
           echo "🔍 Static Analysis: SpotBugs + Checkstyle" >> $GITHUB_STEP_SUMMARY
           echo "🔒 Security Scan: OWASP Dependency Check" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ secrets.SONAR_TOKEN }}" != "" ]; then
-            echo "📝 SonarQube Analysis: Enabled" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "📝 SonarQube Analysis: Skipped (no token configured)" >> $GITHUB_STEP_SUMMARY
-          fi
-          
           # Add link to artifacts
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "📋 **Detailed Reports Available**" >> $GITHUB_STEP_SUMMARY
