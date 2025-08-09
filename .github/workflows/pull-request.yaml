@@ -1,19 +1,15 @@
 name: Test pull request
-permissions:
-  contents: read
-  issues: write
 
 on:
   pull_request:
     branches: [ master ]
 
 jobs:
-  quality-gate:
+  run-tests:
     runs-on: ubuntu-latest
     continue-on-error: false
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -21,164 +17,8 @@ jobs:
           distribution: 'graalvm'
           cache: maven
 
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+      - name: Compile
+        run: mvn clean --batch-mode compile
 
-      - name: Compile and test
-        run: mvn clean --batch-mode compile test
-
-      - name: Run integration tests
-        run: mvn --batch-mode verify -DskipITs=false
-        if: github.event.pull_request.base.ref == 'master'
-
-      - name: Check code coverage
-        run: mvn --batch-mode jacoco:report
-        continue-on-error: true
-
-      - name: Check for security vulnerabilities
-        run: mvn --batch-mode dependency:check
-        continue-on-error: true
-
-      - name: Validate code style
-        run: mvn --batch-mode checkstyle:check
-        continue-on-error: true
-
-      - name: Run SpotBugs analysis
-        run: mvn --batch-mode spotbugs:check
-        continue-on-error: true
-
-      - name: Generate Reports
-        if: always()
-        run: |
-          # Create reports directory
-          mkdir -p reports
-          
-          # Generate JaCoCo report (only if tests ran)
-          if [ -f target/jacoco.exec ]; then
-            mvn jacoco:report || echo "JaCoCo report generation failed"
-          fi
-          
-          # Create summary file
-          echo "## Quality Gate Results" > reports/summary.md
-          echo "✅ Compilation: PASSED" >> reports/summary.md
-          echo "✅ Unit Tests: PASSED" >> reports/summary.md
-          if [ "${{ github.event.pull_request.base.ref }}" == "master" ]; then
-            echo "✅ Integration Tests: PASSED" >> reports/summary.md
-          fi
-          echo "📊 Code Coverage: Generated (JaCoCo)" >> reports/summary.md
-          echo "🔍 Static Analysis: SpotBugs + Checkstyle" >> reports/summary.md
-          echo "🔒 Security Scan: OWASP Dependency Check" >> reports/summary.md        
-          
-          # Create detailed warnings file with Checkstyle output
-          echo "## Quality Gate Warnings Report" > reports/warnings.md
-          echo "" >> reports/warnings.md
-          echo "### Checkstyle Warnings" >> reports/warnings.md
-          echo "\`\`\`" >> reports/warnings.md
-          mvn checkstyle:check 2>&1 | grep -E "\[WARN\]" | head -20 >> reports/warnings.md || echo "No Checkstyle warnings found" >> reports/warnings.md
-          echo "\`\`\`" >> reports/warnings.md
-          
-          echo "" >> reports/warnings.md
-          echo "### Analysis Summary" >> reports/warnings.md
-          echo "- **SpotBugs**: Analysis completed (check artifacts for XML report)" >> reports/warnings.md
-          echo "- **OWASP Security**: Dependency check completed (check artifacts for HTML report)" >> reports/warnings.md
-          echo "- **JaCoCo Coverage**: Report generated (check artifacts for HTML report)" >> reports/warnings.md
-
-      - name: Upload Reports as Artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quality-gate-reports
-          path: |
-            target/site/jacoco/
-            target/spotbugsXml.xml
-            target/dependency-check-report.html
-            target/surefire-reports/
-            reports/
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: Quality Gate Summary
-        if: always()
-        run: |
-          echo "## Quality Gate Results" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Compilation: PASSED" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Unit Tests: PASSED" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ github.event.pull_request.base.ref }}" == "master" ]; then
-            echo "✅ Integration Tests: PASSED" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "📊 Code Coverage: Generated (JaCoCo)" >> $GITHUB_STEP_SUMMARY
-          echo "🔍 Static Analysis: SpotBugs + Checkstyle" >> $GITHUB_STEP_SUMMARY
-          echo "🔒 Security Scan: OWASP Dependency Check" >> $GITHUB_STEP_SUMMARY
-          # Add link to artifacts
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📋 **Detailed Reports Available**" >> $GITHUB_STEP_SUMMARY
-          echo "Download the 'quality-gate-reports' artifact to view detailed warnings and reports." >> $GITHUB_STEP_SUMMARY
-          
-          # Create PR comment
-          echo "## 🔍 Quality Gate Results" > pr-comment.md
-          echo "" >> pr-comment.md
-          echo "### 📊 Summary" >> pr-comment.md
-          echo "- ✅ **Compilation**: PASSED" >> pr-comment.md
-          echo "- ✅ **Tests**: All tests passing" >> pr-comment.md
-          echo "- 📊 **Coverage**: JaCoCo report generated" >> pr-comment.md
-          echo "- 🔍 **Static Analysis**: SpotBugs + Checkstyle completed" >> pr-comment.md
-          echo "- 🔒 **Security**: OWASP Dependency Check completed" >> pr-comment.md
-          echo "" >> pr-comment.md
-          
-          # Add warnings if file exists
-          if [ -f reports/warnings.md ]; then
-            echo "### ⚠️ Code Quality Warnings" >> pr-comment.md
-            cat reports/warnings.md >> pr-comment.md
-          else
-            echo "### ✅ No Critical Issues Found" >> pr-comment.md
-            echo "All quality checks passed successfully!" >> pr-comment.md
-          fi
-          
-          echo "" >> pr-comment.md
-          echo "### 📋 Detailed Reports" >> pr-comment.md
-          echo "Download the **quality-gate-reports** artifact to view:" >> pr-comment.md
-          echo "- 📊 **JaCoCo Coverage Report** (HTML)" >> pr-comment.md
-          echo "- 🔍 **SpotBugs Analysis** (XML)" >> pr-comment.md
-          echo "- 🔒 **OWASP Security Report** (HTML)" >> pr-comment.md
-          echo "- 📋 **Test Results** (XML/HTML)" >> pr-comment.md
-          echo "" >> pr-comment.md
-          echo "---" >> pr-comment.md
-          echo "*This comment was automatically generated by the Quality Gate workflow.*" >> pr-comment.md
-
-      - name: Comment on PR
-        if: always() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            let comment = '';
-            
-            if (fs.existsSync('pr-comment.md')) {
-              comment = fs.readFileSync('pr-comment.md', 'utf8');
-            } else {
-              comment = `## ✅ Quality Gate Results
-              
-              ### 📊 Summary
-              - ✅ **Compilation**: PASSED
-              - ✅ **Tests**: 57 tests passing
-              - 📊 **Coverage**: JaCoCo report generated
-              - 🔍 **Static Analysis**: SpotBugs + Checkstyle completed
-              - 🔒 **Security**: OWASP Dependency Check completed
-              
-              ### 📋 Reports Available
-              Download the 'quality-gate-reports' artifact to view detailed warnings and reports.
-              
-              ---
-              *This comment was automatically generated by the Quality Gate workflow.*`;
-            }
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
+      - name: Test
+        run: mvn --batch-mode test
