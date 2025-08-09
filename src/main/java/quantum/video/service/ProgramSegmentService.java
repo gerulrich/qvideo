@@ -107,7 +107,7 @@ public class ProgramSegmentService extends AbstractStreamService {
      */
     public Uni<String> getAudioSegment(String host, String token, String id, String channel, String file) {
         return getProgram(id)
-            .onItem().ifNull().failWith(() -> new NotFoundException("Video segment not found"))
+            .onItem().ifNull().failWith(() -> new NotFoundException("Audio segment not found"))
             .flatMap(program -> extractPathBetweenDomainAndFile(program.url))
             .map(path -> formatAudioUrl(host, token, path, channel, file));
     }

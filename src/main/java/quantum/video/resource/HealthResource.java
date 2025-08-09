@@ -1,8 +1,8 @@
 package quantum.video.resource;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * Resource providing health check and version information endpoints.

@@ -1,7 +1,6 @@
 package quantum.video.service;
 
 import io.quarkus.cache.Cache;
-import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.*;
@@ -10,15 +9,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import quantum.video.model.Program;
+import quantum.video.utils.BaseTestUtils;
 
-import java.util.Base64;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ProgramSegmentServiceTest {
+class ProgramSegmentServiceTest extends BaseTestUtils {
+
+    private static final String DOMAIN_BASE64 = "cXZpZGVvLmNvbQ=="; // Base64 encoding of "qvideo.com"
+    private static final String PROGRAM_ID = "66ed71d0174ce2b912555115";
 
     @InjectMocks
     private ProgramSegmentService service;
@@ -27,71 +26,76 @@ class ProgramSegmentServiceTest {
 
 
     @Test
+    @DisplayName("Should return video segment URL when program is found")
     void testGetVideoUrl_ProgramFound() {
-        String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
-        String token = "token123";
-        String file = "seg1";
-        String id = "66ed71d0174ce2b912555115";
-        String code = "ch1";
+        // Given
+        Program program = new Program();
+        program.url = "https://qvideo.com/path/to/ch1.mpd";
+        when(cache.get(anyString(), anyCacheLoader())).thenReturn(mockCacheHit(program));
 
-        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
-            Program program = new Program();
-            program.url = "https://domain.com/path/to/ch1.mpd";
-            return Uni.createFrom().item(Uni.createFrom().item(program));
-        });
+        // When & Then
+        service.getVideoSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "ch1", "seg1")
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .assertCompleted()
+                .assertItem("https://qvideo.com/token123/path/to/ch1-avc1_seg1.mp4");
 
-        Uni<String> result = service.getVideoSegment(host, token, id, code, file);
-        assertEquals("https://domain.com/token123/path/to/ch1-avc1_seg1.mp4", result.await().indefinitely());
-
+        // Verify
+        verify(cache).get(eq(PROGRAM_ID), anyCacheLoader());
+        verifyNoMoreInteractions(cache);
     }
 
     @Test
+    @DisplayName("Should throw NotFoundException when program is missing for video segment request")
     void testGetVideoUrl_ProgramNotFound() {
-        String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
-        String token = "token123";
-        String id = "notfound";
-        String channel = "ch1";
-        String file = "seg1";
+        // Given
+        when(cache.get(anyString(), anyCacheLoader())).thenReturn(mockCacheMiss());
 
-        when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
-        Uni<String> result = service.getVideoSegment(host, token, id, channel, file);
-        assertThrows(Exception.class, () -> result.await().indefinitely());
+        // When & Then
+        service.getVideoSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "ch1", "seg1")
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .assertFailedWith(NotFoundException.class);
 
+        // Verify
+        verify(cache).get(eq(PROGRAM_ID), anyCacheLoader());
+        verifyNoMoreInteractions(cache);
     }
 
     @Test
+    @DisplayName("Should return audio segment URL when program is found")
     void testGetAudioUrl_ProgramFound() {
-        String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
-        String token = "token123";
-        String file = "seg1";
+        // Given
+        Program program = new Program();
+        program.url = "https://domain.com/path/to/ch1.mpd";
+        when(cache.get(anyString(), anyCacheLoader())).thenReturn(mockCacheHit(program));
 
-        String id = "66ed71d0174ce2b912555115";
-        String code = "ch1";
-
-        when(cache.get(anyString(), any())).thenAnswer(invocation -> {
-            Program program = new Program();
-            program.url = "https://domain.com/path/to/ch1.mpd";
-            return Uni.createFrom().item(Uni.createFrom().item(program));
-        });
-
-        String result = service.getAudioSegment(host, token, id, code, file)
+        // When & Then
+        service.getAudioSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "ch1", "seg1")
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .assertCompleted()
-            .getItem();
+            .assertItem("https://qvideo.com/token123/path/to/ch1-mp4a_seg1.mp4");
 
-        assertEquals("https://domain.com/token123/path/to/ch1-mp4a_seg1.mp4", result);
-
+        // Verify
+        verify(cache).get(eq(PROGRAM_ID), any());
+        verifyNoMoreInteractions(cache);
     }
 
     @Test
+    @DisplayName("Should throw NotFoundException when program is missing for audio segment request")
     void testGetAudioUrl_ProgramNotFound() {
-        when(cache.get(anyString(), any())).thenReturn(Uni.createFrom().item(Uni.createFrom().nullItem()));
+        // Given
+        when(cache.get(anyString(), anyCacheLoader())).thenReturn(mockCacheMiss());
 
-        String host = Base64.getEncoder().encodeToString("domain.com".getBytes());
-        service.getAudioSegment(host, "token123", "66ed71d0174ce2b912555115", "ch1", "seg1")
+        // When & Then
+        service.getAudioSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "ch1", "seg1")
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .assertFailedWith(NotFoundException.class);
+
+        // Verify
+        verify(cache).get(eq(PROGRAM_ID), any());
+        verifyNoMoreInteractions(cache);
     }
 }
