@@ -78,8 +78,9 @@ public class DefaultStreamStrategy implements StreamStrategy {
                 .onItem().transformToUni(req -> req.send())
                 .onFailure().retry().atMost(3)
                 .subscribe().with(resp -> {
-                    if (resp.statusCode() != 200) {
-                        emitter.fail(new WebApplicationException("Failed: " + resp.statusCode(), resp.statusCode()));
+                    int statusCode = resp.statusCode();
+                    if (statusCode != 200) {
+                        emitter.fail(new WebApplicationException("Failed: " + statusCode, statusCode));
                         return;
                     }
                     resp.handler(emitter::emit);
