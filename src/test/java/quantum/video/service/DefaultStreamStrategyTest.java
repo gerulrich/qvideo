@@ -1,9 +1,9 @@
 package quantum.video.service;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
+import io.vertx.core.http.HttpMethod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,22 +13,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.vertx.core.http.HttpMethod;
+import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import io.vertx.core.http.RequestOptions;
-import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.core.http.HttpClient;
 import io.vertx.mutiny.core.http.HttpClientRequest;
 import io.vertx.mutiny.core.http.HttpClientResponse;
 import jakarta.ws.rs.WebApplicationException;
 
-import java.util.Collections;
 import java.util.function.Consumer;
 
 @ExtendWith(MockitoExtension.class)
 class DefaultStreamStrategyTest {
-    @Mock
-    Vertx vertx;
     @Mock
     HttpClient httpClient;
     @Mock
@@ -40,7 +36,6 @@ class DefaultStreamStrategyTest {
 
     @BeforeEach
     void setUp() {
-        strategy.vertx = vertx;
         strategy.httpClient = httpClient;
     }
 
@@ -55,7 +50,8 @@ class DefaultStreamStrategyTest {
         strategy.get(url)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
-            .assertCompleted();
+            .assertCompleted()
+            .assertItem(httpRequest);
 
         // Verify
         verify(httpClient).request(argThat(options ->
@@ -65,10 +61,7 @@ class DefaultStreamStrategyTest {
             options.getHeaders().get("User-Agent").equals("okhttp/4.12.0") &&
             options.getHeaders().get("X-Flow-Origin").equals("AndroidTV")
         ));
-        verifyNoMoreInteractions(httpClient);
-        verifyNoMoreInteractions(httpRequest);
-        verifyNoMoreInteractions(httpResponse);
-        verifyNoMoreInteractions(vertx);
+        verifyNoMoreInteractions(httpClient, httpRequest, httpResponse);
     }
 
     @Test
@@ -79,38 +72,45 @@ class DefaultStreamStrategyTest {
         when(httpClient.request(any(RequestOptions.class))).thenReturn(Uni.createFrom().item(httpRequest));
         when(httpRequest.send()).thenReturn(Uni.createFrom().item(httpResponse));
         when(httpResponse.statusCode()).thenReturn(200);
-        // Simular emisión de buffer
+
+        // Mock the streaming handlers
         doAnswer(invocation -> {
-            Consumer<Buffer> consumer = invocation.getArgument(0);
-            consumer.accept(buffer);
-            return null;
+            Consumer<Buffer> handler = invocation.getArgument(0);
+            handler.accept(buffer);
+            return httpResponse;
         }).when(httpResponse).handler(any());
+
         doAnswer(invocation -> {
-            ((Runnable)invocation.getArgument(0)).run();
-            return null;
+            Runnable endHandler = invocation.getArgument(0);
+            endHandler.run();
+            return httpResponse;
         }).when(httpResponse).endHandler(any());
-        doAnswer(invocation -> null).when(httpResponse).exceptionHandler(any());
+
+        when(httpResponse.exceptionHandler(any())).thenReturn(httpResponse);
+        when(httpRequest.setChunked(true)).thenReturn(httpRequest);
+        when(httpRequest.idleTimeout(30000)).thenReturn(httpRequest);
+        when(httpResponse.pause()).thenReturn(httpResponse);
 
         // When & Then
         String url = "https://test.com/stream.mpd";
-        strategy.stream(url)
-            .collect().asList()
-            .subscribe()
-            .withSubscriber(UniAssertSubscriber.create())
+        AssertSubscriber<Buffer> subscriber = strategy.stream(url)
+            .subscribe().withSubscriber(AssertSubscriber.create(1));
+
+        subscriber
             .assertCompleted()
-            .assertItem(Collections.singletonList(buffer));
+            .assertItems(buffer);
 
         // Verify
         verify(httpClient).request(any(RequestOptions.class));
+        verify(httpRequest).setChunked(true);
+        verify(httpRequest).idleTimeout(30000);
         verify(httpRequest).send();
         verify(httpResponse).statusCode();
         verify(httpResponse).handler(any());
         verify(httpResponse).endHandler(any());
         verify(httpResponse).exceptionHandler(any());
-        verifyNoMoreInteractions(httpClient);
-        verifyNoMoreInteractions(httpRequest);
-        verifyNoMoreInteractions(httpResponse);
-        verifyNoMoreInteractions(vertx);
+        verify(httpResponse).pause(); // Called by onTermination handler
+        verifyNoMoreInteractions(httpClient, httpRequest, httpResponse);
     }
 
     @Test
@@ -120,23 +120,23 @@ class DefaultStreamStrategyTest {
         when(httpClient.request(any(RequestOptions.class))).thenReturn(Uni.createFrom().item(httpRequest));
         when(httpRequest.send()).thenReturn(Uni.createFrom().item(httpResponse));
         when(httpResponse.statusCode()).thenReturn(404);
+        when(httpRequest.setChunked(true)).thenReturn(httpRequest);
+        when(httpRequest.idleTimeout(30000)).thenReturn(httpRequest);
 
         // When & Then
         String url = "https://test.com/stream.mpd";
-        strategy.stream(url)
-            .collect().asList()
-            .subscribe()
-            .withSubscriber(UniAssertSubscriber.create())
-            .assertFailedWith(WebApplicationException.class);
+        AssertSubscriber<Buffer> subscriber = strategy.stream(url)
+            .subscribe().withSubscriber(AssertSubscriber.create());
 
-        // Verify - statusCode is called 3 times in the implementation (condition + message + status)
+        subscriber.assertFailedWith(WebApplicationException.class, "Failed: 404");
+
+        // Verify
         verify(httpClient).request(any(RequestOptions.class));
+        verify(httpRequest).setChunked(true);
+        verify(httpRequest).idleTimeout(30000);
         verify(httpRequest).send();
         verify(httpResponse).statusCode();
-        verifyNoMoreInteractions(httpClient);
-        verifyNoMoreInteractions(httpRequest);
-        verifyNoMoreInteractions(httpResponse);
-        verifyNoMoreInteractions(vertx);
+        verifyNoMoreInteractions(httpClient, httpRequest, httpResponse);
     }
 
     @Test
@@ -147,44 +147,42 @@ class DefaultStreamStrategyTest {
         when(httpClient.request(any(RequestOptions.class))).thenReturn(Uni.createFrom().failure(requestException));
 
         // When & Then
-        String url = "https://test.com/stream.mpd";
-        strategy.stream(url)
-            .collect().asList()
-            .subscribe()
-            .withSubscriber(UniAssertSubscriber.create())
-            .assertFailedWith(RuntimeException.class);
+        String url = "https://test.com/stream.mpv";
+        AssertSubscriber<Buffer> subscriber = strategy.stream(url)
+            .subscribe().withSubscriber(AssertSubscriber.create());
+
+        subscriber.assertFailedWith(RuntimeException.class, "Request creation failed");
 
         // Verify
         verify(httpClient).request(any(RequestOptions.class));
+        verifyNoInteractions(httpRequest);
+        verifyNoInteractions(httpResponse);
         verifyNoMoreInteractions(httpClient);
-        verifyNoMoreInteractions(httpRequest);
-        verifyNoMoreInteractions(httpResponse);
-        verifyNoMoreInteractions(vertx);
     }
 
     @Test
-    @DisplayName("Should fail stream when send fails")
-    void stream_sendFails_fails() {
+    @DisplayName("Should retry when send fails and eventually fail")
+    void stream_sendFails_retriesAndFails() {
         // Given
-        RuntimeException sendException = new RuntimeException("Send failed");
         when(httpClient.request(any(RequestOptions.class))).thenReturn(Uni.createFrom().item(httpRequest));
-        when(httpRequest.send()).thenReturn(Uni.createFrom().failure(sendException));
+        when(httpRequest.send()).thenReturn(Uni.createFrom().failure(new RuntimeException("Send failed")));
+        when(httpRequest.setChunked(true)).thenReturn(httpRequest);
+        when(httpRequest.idleTimeout(30000)).thenReturn(httpRequest);
 
         // When & Then
         String url = "https://test.com/stream.mpd";
         strategy.stream(url)
-            .collect().asList()
             .subscribe()
-            .withSubscriber(UniAssertSubscriber.create())
-            .assertFailedWith(RuntimeException.class);
+            .withSubscriber(AssertSubscriber.create())
+            .assertFailedWith(RuntimeException.class, "Send failed");
 
-        // Verify - failure at send() level will retry, but only retries the send(), not the request creation
-        verify(httpClient).request(any(RequestOptions.class)); // Called once per retry attempt
-        verify(httpRequest, times(4)).send(); // 1 initial + 3 retries
-        verifyNoMoreInteractions(httpClient);
-        verifyNoMoreInteractions(httpRequest);
-        verifyNoMoreInteractions(httpResponse);
-        verifyNoMoreInteractions(vertx);
+        // Verify - should retry 3 times (initial + 3 retries = 4 total)
+        verify(httpClient).request(any(RequestOptions.class));
+        verify(httpRequest, times(4)).setChunked(true);
+        verify(httpRequest, times(4)).idleTimeout(30000);
+        verify(httpRequest, times(4)).send();
+        verifyNoInteractions(httpResponse);
+        verifyNoMoreInteractions(httpClient, httpRequest);
     }
 
     @Test
@@ -195,32 +193,36 @@ class DefaultStreamStrategyTest {
         when(httpClient.request(any(RequestOptions.class))).thenReturn(Uni.createFrom().item(httpRequest));
         when(httpRequest.send()).thenReturn(Uni.createFrom().item(httpResponse));
         when(httpResponse.statusCode()).thenReturn(200);
-        doAnswer(invocation -> null).when(httpResponse).handler(any());
-        doAnswer(invocation -> null).when(httpResponse).endHandler(any());
+        when(httpRequest.setChunked(true)).thenReturn(httpRequest);
+        when(httpRequest.idleTimeout(30000)).thenReturn(httpRequest);
+        when(httpResponse.pause()).thenReturn(httpResponse);
+
+        when(httpResponse.handler(any())).thenReturn(httpResponse);
+        when(httpResponse.endHandler(any())).thenReturn(httpResponse);
+
         doAnswer(invocation -> {
-            java.util.function.Consumer<Throwable> consumer = invocation.getArgument(0);
-            consumer.accept(streamException);
-            return null;
+            Consumer<Throwable> exceptionHandler = invocation.getArgument(0);
+            exceptionHandler.accept(streamException);
+            return httpResponse;
         }).when(httpResponse).exceptionHandler(any());
 
         // When & Then
         String url = "https://test.com/stream.mpd";
         strategy.stream(url)
-            .collect().asList()
             .subscribe()
-            .withSubscriber(UniAssertSubscriber.create())
-            .assertFailedWith(RuntimeException.class);
+            .withSubscriber(AssertSubscriber.create())
+            .assertFailedWith(RuntimeException.class, "Streaming error");
 
         // Verify
         verify(httpClient).request(any(RequestOptions.class));
+        verify(httpRequest).setChunked(true);
+        verify(httpRequest).idleTimeout(30000);
         verify(httpRequest).send();
         verify(httpResponse).statusCode();
         verify(httpResponse).handler(any());
         verify(httpResponse).endHandler(any());
         verify(httpResponse).exceptionHandler(any());
-        verifyNoMoreInteractions(httpClient);
-        verifyNoMoreInteractions(httpRequest);
-        verifyNoMoreInteractions(httpResponse);
-        verifyNoMoreInteractions(vertx);
+        verify(httpResponse).pause();
+        verifyNoMoreInteractions(httpClient, httpRequest, httpResponse);
     }
 }

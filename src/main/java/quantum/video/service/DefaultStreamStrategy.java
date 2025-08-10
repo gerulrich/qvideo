@@ -75,7 +75,11 @@ public class DefaultStreamStrategy implements StreamStrategy {
     public Multi<Buffer> stream(String url) {
         return Multi.createFrom().emitter(emitter -> {
             get(url)
-                .onItem().transformToUni(req -> req.send())
+                .onItem().transformToUni(req -> {
+                    req.setChunked(true); // Configure request for optimal streaming
+                    req.idleTimeout(30000); // Use idleTimeout instead of deprecated setTimeout, 30 seconds idle timeout
+                    return req.send();
+                })
                 .onFailure().retry().atMost(3)
                 .subscribe().with(resp -> {
                     int statusCode = resp.statusCode();
@@ -83,9 +87,23 @@ public class DefaultStreamStrategy implements StreamStrategy {
                         emitter.fail(new WebApplicationException("Failed: " + statusCode, statusCode));
                         return;
                     }
-                    resp.handler(emitter::emit);
-                    resp.endHandler(emitter::complete);
-                    resp.exceptionHandler(emitter::fail);
+
+                    // Set up streaming handlers immediately
+                    resp.handler(buffer -> {
+                        if (emitter.isCancelled()) {
+                            resp.pause(); // Stop reading if downstream cancelled
+                            return;
+                        }
+                        emitter.emit(buffer);
+                    });
+                    resp.endHandler(emitter::complete); // Fix: endHandler doesn't take parameters
+                    resp.exceptionHandler(throwable -> {
+                        if (!emitter.isCancelled()) {
+                            emitter.fail(throwable);
+                        }
+                    });
+                    emitter.onTermination(resp::pause); // Handle backpressure and cleanup
+
                 }, emitter::fail);
         });
     }
