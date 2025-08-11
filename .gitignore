@@ -28,5 +28,17 @@ replay_pid*
 target/*
 *.iml
 
+# cursor
+.cursor
+
+# visual studio code
+.vscode/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+
+# Application specific
 secret.jwk
 env.local

@@ -8,7 +8,7 @@ This document directs GitHub Copilot to generate code consistent with our archit
 - **Purpose**: Stream video content via RESTful microservices supporting channel management, live streaming, PVR recordings, and DRM key distribution.
 
 ## Module Structure
-quantum.music
+quantum.video
 
 - **api**: DTOs, paging models, API contracts (`*.java` in `quantum/music/api`)
 - **model**: Domain entities and shapes (`quantum/music/model`)
@@ -47,7 +47,7 @@ quantum.music
 - Keep resources minimal; delegate to service layer
 
 ## Testing Guidelines
-- **Unit Tests**: JUnit 5 in `src/test/java/quantum/music/service` or `utils`
+- **Unit Tests**: JUnit 5 in `src/test/java/quantum/video/service` or `utils`
 - **Mocking**: Mockito for dependencies
 - **Integration Tests**: RestAssured or Quarkus test framework in `src/test/java`
 - **Naming**: `{ClassName}Test`, descriptive method names
