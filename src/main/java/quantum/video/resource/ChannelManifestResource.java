@@ -5,11 +5,10 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import quantum.video.service.ChannelManifestService;
-
-import java.net.URI;
 
 /**
  * Resource for handling DASH manifests for live channel streaming.
@@ -65,7 +64,11 @@ public class ChannelManifestResource {
         LOG.infof("Request for channel manifest (url redirect): %s", channel);
         return service.getManifestRedirectUrl(channel)
             .onFailure().invoke(ex -> LOG.warnf("Failed to redirect to manifest for channel: %s", channel, ex))
-            .onItem().transform(url -> Response.temporaryRedirect(URI.create(url)).build());
+            .onItem().transform(url -> Response
+                        .status(Response.Status.FOUND)
+                        .header(HttpHeaders.LOCATION, url)
+                        .build()
+            );
     }
 
     /**
