@@ -69,7 +69,7 @@ public class ProgramSegmentResource {
             @PathParam("file") String file) {
 
         LOG.infof("Request audio segment for program: %s-mp4a_%s.mp4", channel, file);
-        return service.getAudioSegment(host, token, id, channel, file)
+        return service.getAudioSegment(host, token, id, file)
             .onFailure().invoke(ex -> LOG.warnf("Failed to get audio segment for channel: %s", channel, ex))
             .onItem().transformToMulti(service::stream);
     }
@@ -108,7 +108,7 @@ public class ProgramSegmentResource {
             @PathParam("file") String file) {
 
         LOG.infof("Request video segment for program: %s-avc1_%s.mp4", channel, file);
-        return service.getVideoSegment(host, token, id, channel, file)
+        return service.getVideoSegment(host, token, id, file)
             .onFailure().invoke(ex -> LOG.warnf("Failed to get video segment for program: %s", channel, ex))
             .onItem().transformToMulti(service::stream);
     }

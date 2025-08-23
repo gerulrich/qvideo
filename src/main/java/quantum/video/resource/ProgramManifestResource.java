@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
+import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
 import quantum.video.service.ProgramManifestService;
 
@@ -56,7 +57,7 @@ public class ProgramManifestResource {
     @GET
     @Path("/manifest/{id}/{channel}.mpd")
     @Produces("text/html")
-    public Uni<Response> redirect(@PathParam("id") String id, @PathParam("channel") String channel) {
+    public Uni<Response> redirect(@PathParam("id") ObjectId id, @PathParam("channel") String channel) {
         LOG.infof("Request for program manifest (url redirect): %s", channel);
         return service.getManifestRedirectUrl(id, channel)
             .onFailure().invoke(() -> LOG.warnf("Failed to redirect to program manifest for channel: %s", channel))
@@ -91,11 +92,11 @@ public class ProgramManifestResource {
     public Multi<Buffer> manifest(
             @PathParam("host") String host,
             @PathParam("token") String token,
-            @PathParam("id") String id,
+            @PathParam("id") ObjectId id,
             @PathParam("channel") String channel)
     {
         LOG.infof("Request for program manifest: %s", channel);
-        return service.getManifestRedirectUrl(host, token, id, channel)
+        return service.getManifestRedirectUrl(host, token, id)
             .onFailure().invoke(ex -> LOG.warnf("Failed to get program manifest URL for channel: %s", channel, ex))
             .onItem().transformToMulti(service::stream);
     }

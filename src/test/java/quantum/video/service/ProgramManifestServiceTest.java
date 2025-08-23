@@ -1,10 +1,11 @@
 package quantum.video.service;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +25,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 class ProgramManifestServiceTest extends BaseTestUtils {
 
     private static final String DOMAIN_BASE64 = "cXZpZGVvLmNvbQ=="; // Base64 encoding of "qvideo.com"
-    private static final String PROGRAM_ID = "60d5f484b3f1c8b1a4e8e0a1";
+    private static final ObjectId PROGRAM_ID = new ObjectId("60d5f484b3f1c8b1a4e8e0a1");
     private static final String CHANNEL_CODE = "ch1";
     private static final String TOKEN = "token123";
 
@@ -43,7 +44,7 @@ class ProgramManifestServiceTest extends BaseTestUtils {
     @DisplayName("Should return manifest redirect URL when program is found")
     void getManifestRedirectUrlWithHost_returnsUrl() {
         // Given
-        when(cache.get(anyString(), anyCacheLoader()))
+        when(cache.get(any(), anyCacheLoader()))
         .thenReturn(mockCacheHit(
             newProgram()
                 .id(PROGRAM_ID)
@@ -53,11 +54,11 @@ class ProgramManifestServiceTest extends BaseTestUtils {
         ));
 
         // When & Then
-        service.getManifestRedirectUrl(DOMAIN_BASE64, TOKEN, PROGRAM_ID, CHANNEL_CODE)
+        service.getManifestRedirectUrl(DOMAIN_BASE64, TOKEN, PROGRAM_ID)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .assertCompleted()
-            .assertItem("https://qvideo.com/token123/path/to/ch1.mpd");
+            .assertItem("https://qvideo.com/token123/path/to/program.mpd");
 
         // Verify
         verify(cache).get(eq(PROGRAM_ID), anyCacheLoader());
@@ -68,10 +69,10 @@ class ProgramManifestServiceTest extends BaseTestUtils {
     @DisplayName("Should throw NotFoundException when program is missing for manifest redirect")
     void getManifestRedirectUrlWithHost_programNotFound_throwsException() {
         // Given
-        when(cache.get(anyString(), anyCacheLoader())).thenReturn(mockCacheMiss());
+        when(cache.get(any(), anyCacheLoader())).thenReturn(mockCacheMiss());
 
         // When & Then
-        service.getManifestRedirectUrl(DOMAIN_BASE64, TOKEN, PROGRAM_ID, CHANNEL_CODE)
+        service.getManifestRedirectUrl(DOMAIN_BASE64, TOKEN, PROGRAM_ID)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .assertFailedWith(NotFoundException.class);
@@ -85,7 +86,7 @@ class ProgramManifestServiceTest extends BaseTestUtils {
     @DisplayName("Should return manifest redirect URL when program is found and HTTP request succeeds")
     void getManifestRedirectUrl_success() {
         // Given
-        when(cache.get(anyString(), anyCacheLoader()))
+        when(cache.get(any(), anyCacheLoader()))
         .thenReturn(mockCacheHit(
             newProgram()
                 .id(PROGRAM_ID)
@@ -117,7 +118,7 @@ class ProgramManifestServiceTest extends BaseTestUtils {
     @DisplayName("Should throw NotFoundException when program is missing for manifest redirect without host")
     void getManifestRedirectUrl_programNotFound_throwsException() {
         // Given
-        when(cache.get(anyString(), anyCacheLoader())).thenReturn(mockCacheMiss());
+        when(cache.get(any(), anyCacheLoader())).thenReturn(mockCacheMiss());
 
         // When & Then
         service.getManifestRedirectUrl(PROGRAM_ID, CHANNEL_CODE)
@@ -134,7 +135,7 @@ class ProgramManifestServiceTest extends BaseTestUtils {
     @DisplayName("Should handle HTTP request failure and retry")
     void getManifestRedirectUrl_httpRequestFailure_retries() {
         // Given
-        when(cache.get(anyString(), anyCacheLoader()))
+        when(cache.get(any(), anyCacheLoader()))
         .thenReturn(mockCacheHit(
             newProgram()
                 .id(PROGRAM_ID)
@@ -168,7 +169,7 @@ class ProgramManifestServiceTest extends BaseTestUtils {
     @DisplayName("Should handle malformed location header gracefully")
     void getManifestRedirectUrl_malformedLocationHeader_handlesGracefully() {
         // Given
-        when(cache.get(anyString(), anyCacheLoader()))
+        when(cache.get(any(), anyCacheLoader()))
         .thenReturn(mockCacheHit(
             newProgram()
                 .id(PROGRAM_ID)

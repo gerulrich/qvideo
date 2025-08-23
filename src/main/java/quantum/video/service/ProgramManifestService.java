@@ -83,14 +83,15 @@ public class ProgramManifestService extends AbstractStreamService {
      * @param host The Base64-encoded host name
      * @param token The security token for authorization
      * @param id The unique identifier of the recorded program
-     * @param channel The channel identifier related to the program
      * @return A {@link Multi} emitting the manifest content as {@link Buffer} chunks
      */
-    public Uni<String> getManifestRedirectUrl(String host, String token, String id, String channel) {
+    public Uni<String> getManifestRedirectUrl(String host, String token, ObjectId id) {
         return getProgram(id)
                 .onItem().ifNull().failWith(() -> new NotFoundException("Manifest not found"))
-                .flatMap(program -> extractPathBetweenDomainAndFile(program.url))
-            .map(path -> formatMpdUrl(host, token, channel, path));
+                .map(program -> {
+                    String basePath = getBasePath(program.url);
+                    return formatMpdUrl(host, token, getChannelCodeFromUrl(program.url), basePath);
+                });
     }
 
     /**
@@ -113,7 +114,7 @@ public class ProgramManifestService extends AbstractStreamService {
      * @param channel The channel identifier related to the program
      * @return A {@link Uni} containing the formatted manifest URL path, or an error if the program is not found
      */
-    public Uni<String> getManifestRedirectUrl(String id, String channel) {
+    public Uni<String> getManifestRedirectUrl(ObjectId id, String channel) {
         LOG.infof("Channel URL: %s", channel);
         return getProgram(id)
             .onItem().ifNull().failWith(() -> new NotFoundException("Manifest not found"))
@@ -140,7 +141,7 @@ public class ProgramManifestService extends AbstractStreamService {
      * @param id The unique identifier of the program to retrieve
      * @return A {@link Uni} containing the {@link Program} information, or an error if not found
      */
-    private Uni<Program> getProgram(String id) {
-        return cache.get(id, k -> repository.findById(new ObjectId(k))).flatMap(Function.identity());
+    private Uni<Program> getProgram(ObjectId id) {
+        return cache.get(id, k -> repository.findById(k)).flatMap(Function.identity());
     }
 }

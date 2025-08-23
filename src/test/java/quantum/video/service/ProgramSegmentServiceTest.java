@@ -34,7 +34,7 @@ class ProgramSegmentServiceTest extends BaseTestUtils {
         when(cache.get(anyString(), anyCacheLoader())).thenReturn(mockCacheHit(program));
 
         // When & Then
-        service.getVideoSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "ch1", "seg1")
+        service.getVideoSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "seg1")
                 .subscribe()
                 .withSubscriber(UniAssertSubscriber.create())
                 .assertCompleted()
@@ -52,7 +52,7 @@ class ProgramSegmentServiceTest extends BaseTestUtils {
         when(cache.get(anyString(), anyCacheLoader())).thenReturn(mockCacheMiss());
 
         // When & Then
-        service.getVideoSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "ch1", "seg1")
+        service.getVideoSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "seg1")
                 .subscribe()
                 .withSubscriber(UniAssertSubscriber.create())
                 .assertFailedWith(NotFoundException.class);
@@ -71,7 +71,7 @@ class ProgramSegmentServiceTest extends BaseTestUtils {
         when(cache.get(anyString(), anyCacheLoader())).thenReturn(mockCacheHit(program));
 
         // When & Then
-        service.getAudioSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "ch1", "seg1")
+        service.getAudioSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "seg1")
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .assertCompleted()
@@ -89,7 +89,7 @@ class ProgramSegmentServiceTest extends BaseTestUtils {
         when(cache.get(anyString(), anyCacheLoader())).thenReturn(mockCacheMiss());
 
         // When & Then
-        service.getAudioSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "ch1", "seg1")
+        service.getAudioSegment(DOMAIN_BASE64, "token123", PROGRAM_ID, "seg1")
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .assertFailedWith(NotFoundException.class);

@@ -98,13 +98,11 @@ class PlaybackChannelServiceTest {
         Channel ch1 = data.getFirst().getItem1();
         Program pgr1 = data.getFirst().getItem2();
         assertEquals(CHANNEL_ID_1, ch1.id.toString());
-        assertEquals("ch1", ch1.code);
         assertEquals("ch1-url", pgr1.url);
 
         Channel ch2 = data.get(1).getItem1();
         Program pgr2 = data.get(1).getItem2();
         assertEquals(CHANNEL_ID_2, ch2.id.toString());
-        assertEquals("ch2", ch2.code);
         assertEquals("ch2-url", pgr2.url);
 
         assertEquals(page, result.page());
@@ -146,13 +144,11 @@ class PlaybackChannelServiceTest {
         Channel ch1 = data.getFirst().getItem1();
         Program pgr1 = data.getFirst().getItem2();
         assertEquals(CHANNEL_ID_1, ch1.id.toString());
-        assertEquals("ch1", ch1.code);
         assertNull(pgr1);
 
         Channel ch2 = data.get(1).getItem1();
         Program pgr2 = data.get(1).getItem2();
         assertEquals(CHANNEL_ID_2, ch2.id.toString());
-        assertEquals("ch2", ch2.code);
         assertNull(pgr2);
 
         assertEquals(page, result.page());
@@ -209,7 +205,6 @@ class PlaybackChannelServiceTest {
 
     private static Channel buildChannel(String id, String code) {
         Channel channel = new Channel();
-        channel.code = code;
         channel.id = new ObjectId(id);
         return channel;
     }

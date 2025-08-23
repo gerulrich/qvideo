@@ -6,6 +6,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.smallrye.mutiny.tuples.Tuple2;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.SecurityContext;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,12 +56,12 @@ public class PlaybackChannelResourceTest {
                     List.of(
                         Tuple2.of(
                             newChannel()
-                                .id("60d5f484b3f1c8b1a4e8e0a1")
+                                .id(new ObjectId("60d5f484b3f1c8b1a4e8e0a1"))
                                 .name("Test Channel")
                                 .logo("https://example.com/logo.png")
                                 .build(),
                             newProgram()
-                                .id("687b2460732282022ceabe59")
+                                .id(new ObjectId("687b2460732282022ceabe59"))
                                 .title("Hello program title!")
                                 .description("Program description")
                                 .start(Instant.now().minus(30, ChronoUnit.MINUTES))
@@ -69,7 +70,7 @@ public class PlaybackChannelResourceTest {
                         ),
                         Tuple2.of(
                             newChannel()
-                                .id( "60d5f484b3f1c8b1a4e8e0a2")
+                                .id(new ObjectId("60d5f484b3f1c8b1a4e8e0a2"))
                                 .name("Test Channel 2")
                                 .logo("https://example.com/logo2.png").build(),
                             null
@@ -158,15 +159,14 @@ public class PlaybackChannelResourceTest {
             Uni.createFrom().item(
                 Tuple2.of(
                     newChannel()
-                        .id("60d5f484b3f1c8b1a4e8e0a1")
+                        .id(new ObjectId("60d5f484b3f1c8b1a4e8e0a1"))
                         .name("Test Channel")
                         .logo("https://example.com/logo.png")
                         .url("http://qvideo.com/manifest/MyChannel.mpd")
-                        .code("MyChannel")
                         .drm("Widevine", "http://qvideo.com/license/widevine")
                         .build(),
                     newProgram()
-                        .id("687b2460732282022ceabe59")
+                        .id(new ObjectId("687b2460732282022ceabe59"))
                         .title("Hello program title!")
                         .description("Program description")
                         .start(Instant.now().minus(30, ChronoUnit.MINUTES))
@@ -221,14 +221,14 @@ public class PlaybackChannelResourceTest {
             Uni.createFrom().item(
                 Tuple2.of(
                     newChannel()
-                        .id("60d5f484b3f1c8b1a4e8e0a1")
+                        .id(new ObjectId("60d5f484b3f1c8b1a4e8e0a1"))
                         .name("Test Channel")
                         .logo("https://example.com/logo.png")
                         .url("http://qvideo.com/manifest/MyChannel.mpd")
                         .drm("ClearKeys", "13151025701A69AB", "F5ACC66A6DD522D2")
                         .build(),
                     newProgram()
-                        .id("687b2460732282022ceabe59")
+                        .id(new ObjectId("687b2460732282022ceabe59"))
                         .title("Hello program title!")
                         .description("Program description")
                         .start(Instant.now().minus(30, ChronoUnit.MINUTES))
@@ -286,7 +286,7 @@ public class PlaybackChannelResourceTest {
             Uni.createFrom().item(
                 Tuple2.of(
                     newChannel()
-                        .id("60d5f484b3f1c8b1a4e8e0a1")
+                        .id(new ObjectId("60d5f484b3f1c8b1a4e8e0a1"))
                         .name("Test Channel")
                         .url("http://qvideo.com/manifest/MyChannel.mpd")
                         .logo("https://example.com/logo.png")
@@ -336,10 +336,9 @@ public class PlaybackChannelResourceTest {
             Uni.createFrom().item(
                 Tuple2.of(
                     newChannel()
-                        .id("60d5f484b3f1c8b1a4e8e0a1")
+                        .id(new ObjectId("60d5f484b3f1c8b1a4e8e0a1"))
                         .name("Test Channel")
                         .url("http://qvideo.com/manifest/MyChannel.mpd")
-                        .code("MyChannel")
                         .logo("https://example.com/logo.png")
                         .proxy(true)
                         .build(),
@@ -359,7 +358,7 @@ public class PlaybackChannelResourceTest {
         assertNotNull(play);
         assertEquals("60d5f484b3f1c8b1a4e8e0a1", play.id().toString());
         assertEquals("Test Channel", play.name());
-        assertEquals("http://localhost:8080/live/manifest/MyChannel.mpd", play.url());
+        assertEquals("http://localhost:8080/live/manifest/60d5f484b3f1c8b1a4e8e0a1.mpd", play.url());
         assertEquals("https://example.com/logo.png", play.logo());
         assertNull(play.drm());
         assertNull(play.nowPlaying());

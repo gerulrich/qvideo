@@ -5,6 +5,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.ws.rs.NotFoundException;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ChannelSegmentResourceTest {
 
+    public static final ObjectId CHANNEL_ID = new ObjectId("68a8ddd34a6f610b4efe22e8");
     @InjectMocks
     ChannelSegmentResource resource;
 
@@ -29,7 +31,7 @@ class ChannelSegmentResourceTest {
     @DisplayName("Should stream audio segment for valid request")
     public void getAudioSegment_streamsAudio() {
         // Given
-        when(service.getAudioSegment(anyString(), anyString(), anyString(), anyString())).
+        when(service.getAudioSegment(anyString(), anyString(), any(), anyString())).
         thenReturn(
             Uni.createFrom().item("https://qvideo.com/segment/00001.mp4")
         );
@@ -44,7 +46,7 @@ class ChannelSegmentResourceTest {
         );
 
         // When & Then
-        resource.audio("cXZpZGVvLmNvbQ==", "myToken", "MyChanel", "MyChannel")
+        resource.audio("cXZpZGVvLmNvbQ==", "myToken", CHANNEL_ID, "MyChannel","MyChannel")
             .subscribe()
             .withSubscriber(AssertSubscriber.create(3))
             .assertItems(new Buffer[] {
@@ -55,7 +57,7 @@ class ChannelSegmentResourceTest {
             .assertCompleted();
 
         // Verify
-        verify(service).getAudioSegment("cXZpZGVvLmNvbQ==", "myToken", "MyChanel", "MyChannel");
+        verify(service).getAudioSegment("cXZpZGVvLmNvbQ==", "myToken", CHANNEL_ID, "MyChannel");
         verify(service).stream("https://qvideo.com/segment/00001.mp4");
         verifyNoMoreInteractions(service);
     }
@@ -64,19 +66,19 @@ class ChannelSegmentResourceTest {
     @DisplayName("Should fail with NotFoundException for missing audio segment")
     public void getAudioSegment_notFound_throwsException() {
         // Given
-        when(service.getAudioSegment(anyString(), anyString(), anyString(), anyString())).
+        when(service.getAudioSegment(anyString(), anyString(), any(), anyString())).
         thenReturn(
             Uni.createFrom().failure(new NotFoundException("Channel Segment not found"))
         );
 
         // When & Then
-        resource.audio("cXZpZGVvLmNvbQ==", "myToken", "MyChanel", "MyChannel")
+        resource.audio("cXZpZGVvLmNvbQ==", "myToken", CHANNEL_ID, "MyChannel", "MyChannel")
             .subscribe()
             .withSubscriber(AssertSubscriber.create())
             .assertFailedWith(NotFoundException.class);
 
         // Verify
-        verify(service).getAudioSegment("cXZpZGVvLmNvbQ==", "myToken", "MyChanel", "MyChannel");
+        verify(service).getAudioSegment("cXZpZGVvLmNvbQ==", "myToken", CHANNEL_ID,"MyChannel");
         verifyNoMoreInteractions(service);
     }
 
@@ -84,7 +86,7 @@ class ChannelSegmentResourceTest {
     @DisplayName("Should stream video segment for valid request")
     public void getVideoSegment_streamsVideo() {
         // Given
-        when(service.getVideoSegment(anyString(), anyString(), anyString(), anyString())).
+        when(service.getVideoSegment(anyString(), anyString(), any(), anyString())).
         thenReturn(
             Uni.createFrom().item("https://qvideo.com/segment/00001.mp4")
         );
@@ -99,7 +101,7 @@ class ChannelSegmentResourceTest {
         );
 
         // When & Then
-        resource.video("cXZpZGVvLmNvbQ==", "myToken", "MyChanel", "MyChannel")
+        resource.video("cXZpZGVvLmNvbQ==", "myToken", CHANNEL_ID, "MyChannel", "MyChannel")
             .subscribe()
             .withSubscriber(AssertSubscriber.create(3))
             .assertItems(new Buffer[] {
@@ -110,7 +112,7 @@ class ChannelSegmentResourceTest {
             .assertCompleted();
 
         // Verify
-        verify(service).getVideoSegment("cXZpZGVvLmNvbQ==", "myToken", "MyChanel", "MyChannel");
+        verify(service).getVideoSegment("cXZpZGVvLmNvbQ==", "myToken", CHANNEL_ID, "MyChannel");
         verify(service).stream("https://qvideo.com/segment/00001.mp4");
         verifyNoMoreInteractions(service);
     }
@@ -119,19 +121,19 @@ class ChannelSegmentResourceTest {
     @DisplayName("Should fail with NotFoundException for missing video segment")
     public void getVideoSegment_notFound_throwsException() {
         // Given
-        when(service.getVideoSegment(anyString(), anyString(), anyString(), anyString())).
+        when(service.getVideoSegment(anyString(), anyString(), any(), anyString())).
         thenReturn(
             Uni.createFrom().failure(new NotFoundException("Video segment not found"))
         );
 
         // When & Then
-        resource.video("cXZpZGVvLmNvbQ==", "myToken", "MyChanel", "MyChannel")
+        resource.video("cXZpZGVvLmNvbQ==", "myToken", CHANNEL_ID, "MyChannel", "MyChannel")
             .subscribe()
             .withSubscriber(AssertSubscriber.create())
             .assertFailedWith(NotFoundException.class);
 
         // Verify
-        verify(service).getVideoSegment("cXZpZGVvLmNvbQ==", "myToken", "MyChanel", "MyChannel");
+        verify(service).getVideoSegment("cXZpZGVvLmNvbQ==", "myToken", CHANNEL_ID, "MyChannel");
         verifyNoMoreInteractions(service);
     }
 

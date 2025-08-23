@@ -71,15 +71,16 @@ public class ProgramSegmentService extends AbstractStreamService {
      * @param host The Base64-encoded host name
      * @param token The security token for authorization
      * @param id The unique identifier of the recorded program
-     * @param channel The channel identifier associated with the program
      * @param file The specific video segment file identifier
      * @return A {@link Multi} emitting the video segment content as {@link Buffer} chunks
      */
-    public Uni<String> getVideoSegment(String host, String token, String id, String channel, String file) {
+    public Uni<String> getVideoSegment(String host, String token, String id, String file) {
         return getProgram(id)
             .onItem().ifNull().failWith(() -> new NotFoundException("Video segment not found"))
-            .flatMap(program -> extractPathBetweenDomainAndFile(program.url))
-            .map(path -> formatVideoUrl(host, token, path, channel, file));
+            .map(program -> {
+                String basePath = getBasePath(program.url);
+                return formatVideoUrl(host, token, basePath, getChannelCodeFromUrl(program.url), file);
+            });
     }
 
     /**
@@ -101,15 +102,16 @@ public class ProgramSegmentService extends AbstractStreamService {
      * @param host The Base64-encoded host name
      * @param token The security token for authorization
      * @param id The unique identifier of the recorded program
-     * @param channel The channel identifier associated with the program
      * @param file The specific audio segment file identifier
      * @return A {@link Multi} emitting the audio segment content as {@link Buffer} chunks
      */
-    public Uni<String> getAudioSegment(String host, String token, String id, String channel, String file) {
+    public Uni<String> getAudioSegment(String host, String token, String id, String file) {
         return getProgram(id)
             .onItem().ifNull().failWith(() -> new NotFoundException("Audio segment not found"))
-            .flatMap(program -> extractPathBetweenDomainAndFile(program.url))
-            .map(path -> formatAudioUrl(host, token, path, channel, file));
+            .map(program -> {
+                String basePath = getBasePath(program.url);
+                return formatAudioUrl(host, token, basePath, getChannelCodeFromUrl(program.url), file);
+            });
     }
 
     /**
