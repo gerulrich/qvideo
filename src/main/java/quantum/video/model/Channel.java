@@ -1,7 +1,6 @@
 package quantum.video.model;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
-import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
 
 /**
@@ -16,7 +15,7 @@ import org.bson.types.ObjectId;
  * by programs, manifests, and other components throughout the application.
  * </p>
  */
-@MongoEntity(collection="channels")
+@MongoEntity(collection="channelsv2")
 public class Channel {
     /**
      * Unique identifier for the channel in MongoDB.
@@ -32,11 +31,6 @@ public class Channel {
      * The channel number in the EPG/lineup.
      */
     public Integer number;
-
-    /**
-     * The unique code identifier for the channel, used in URLs and API paths.
-     */
-    public String code;
 
     /**
      * The source URL for the channel's streaming content.
@@ -85,8 +79,6 @@ public class Channel {
 
     /**
      * Digital Rights Management configuration for the channel, if applicable.
-     * Mapped from the "_drm" field in MongoDB.
      */
-    @BsonProperty("_drm")
     public DrmConfig drm;
 }

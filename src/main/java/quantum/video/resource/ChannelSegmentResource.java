@@ -5,6 +5,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
 import quantum.video.service.AbstractStreamService;
 import quantum.video.service.ChannelSegmentService;
@@ -56,15 +57,16 @@ public class ChannelSegmentResource extends AbstractStreamService {
      * @return A {@link Multi} stream of {@link Buffer} containing the audio segment data in MP4 format
      */
     @GET
-    @Path("/{host}/{token}/{channel}-mp4a_{file}.mp4")
+    @Path("/{host}/{token}/{id}/{channel}-mp4a_{file}.mp4")
     @Produces("audio/mp4")
     public Multi<Buffer> audio(
             @PathParam("host") String host,
             @PathParam("token") String token,
+            @PathParam("id") ObjectId id,
             @PathParam("channel") String channel,
             @PathParam("file") String file) {
         LOG.infof("Request for audio segment: channel=%s, file=%s", channel, file);
-        return service.getAudioSegment(host, token, channel, file)
+        return service.getAudioSegment(host, token, id, file)
             .onFailure().invoke(ex -> LOG.warnf("Failed to get audio segment for channel: %s", channel, ex))
             .onItem().transformToMulti(service::stream);
     }
@@ -88,16 +90,17 @@ public class ChannelSegmentResource extends AbstractStreamService {
      * @return A {@link Multi} stream of {@link Buffer} containing the video segment data in MP4 format
      */
     @GET
-    @Path("/{host}/{token}/{channel}-avc1_{file}.mp4")
+    @Path("/{host}/{token}/{id}/{channel}-avc1_{file}.mp4")
     @Produces("video/mp4")
     public Multi<Buffer> video(
             @PathParam("host") String host,
             @PathParam("token") String token,
+            @PathParam("id") ObjectId id,
             @PathParam("channel") String channel,
             @PathParam("file") String file) {
 
         LOG.infof("Request for video segment: channel=%s, file=%s", channel, file);
-        return service.getVideoSegment(host, token, channel, file)
+        return service.getVideoSegment(host, token, id, file)
                 .onFailure().invoke(ex -> LOG.warnf("Failed to get video segment for channel: %s", channel, ex))
                 .onItem().transformToMulti(service::stream);
     }

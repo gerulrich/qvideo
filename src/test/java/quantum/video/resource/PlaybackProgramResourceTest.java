@@ -5,6 +5,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.SecurityContext;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,14 +54,14 @@ class PlaybackProgramResourceTest {
                 new PagedData<>(
                     List.of(
                         newProgram()
-                            .id("60d5f484b3f1c8b1a4e8e0a1")
+                            .id(new ObjectId("60d5f484b3f1c8b1a4e8e0a1"))
                             .title("Hello program title!")
                             .description("Program description")
                             .start(Instant.now().minus(30, ChronoUnit.MINUTES))
                             .end(Instant.now().plus(30, ChronoUnit.MINUTES))
                             .build(),
                         newProgram()
-                            .id("687b2460732282022ceabe59")
+                            .id(new ObjectId("687b2460732282022ceabe59"))
                             .title("Hello another program title!")
                             .description("Another program description")
                             .start(Instant.now().minus(30, ChronoUnit.MINUTES))
@@ -116,7 +117,7 @@ class PlaybackProgramResourceTest {
         thenReturn(
             Uni.createFrom().item(
                 newProgram()
-                    .id("60d5f484b3f1c8b1a4e8e0a1")
+                    .id(new ObjectId("60d5f484b3f1c8b1a4e8e0a1"))
                     .title("Program Title")
                     .description("Program Description")
                     .start(Instant.now().minus(30, ChronoUnit.MINUTES))

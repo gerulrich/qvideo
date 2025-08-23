@@ -4,9 +4,11 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
+import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
 import quantum.video.service.ChannelManifestService;
 
@@ -53,21 +55,21 @@ public class ChannelManifestResource {
      * channel does not exist or is not available, a 404 Not Found response is returned.
      * </p>
      *
-     * @param channel The channel identifier to fetch the manifest for
+     * @param id The id of the channel to redirect to
      * @return A {@link Uni} containing a redirect {@link Response} to the manifest URL,
      *         or a 404 response if the channel is not found
      */
     @GET
-    @Path("/manifest/{channel}.mpd")
+    @Path("/manifest/{id}.mpd")
     @Produces("text/html")
-    public Uni<Response> redirect(@PathParam("channel") String channel) {
-        LOG.infof("Request for channel manifest (url redirect): %s", channel);
-        return service.getManifestRedirectUrl(channel)
-            .onFailure().invoke(ex -> LOG.warnf("Failed to redirect to manifest for channel: %s", channel, ex))
+    public Uni<Response> redirect(@PathParam("id") ObjectId id) {
+        LOG.infof("Request for channel manifest (url redirect): %s", id);
+        return service.getManifestRedirectUrl(id)
+            .onFailure().invoke(ex -> LOG.warnf("Failed to redirect to manifest for channel: %s", id, ex))
             .onItem().transform(url -> Response
-                        .status(Response.Status.FOUND)
-                        .header(HttpHeaders.LOCATION, url)
-                        .build()
+                .status(Response.Status.FOUND)
+                .header(HttpHeaders.LOCATION, url)
+                .build()
             );
     }
 
@@ -81,19 +83,21 @@ public class ChannelManifestResource {
      *
      * @param host The host identifier for content source location
      * @param token The security token for authentication and authorization
+     * @param id The id of the channel to retrieve the manifest for
      * @param channel The channel identifier for which to serve the manifest
      * @return A {@link Multi} stream of {@link Buffer} containing the MPD manifest XML data
      */
     @GET
-    @Path("/{host}/{token}/{channel}.mpd")
+    @Path("/{host}/{token}/{id}/{channel}.mpd")
     @Produces("application/dash+xml")
     public Multi<Buffer> manifest(
             @PathParam("host") String host,
             @PathParam("token") String token,
+            @Valid @PathParam("id") ObjectId id,
             @PathParam("channel") String channel)
     {
         LOG.infof("Request for channel manifest: %s", channel);
-        return service.getManifestUrl(host, token, channel)
+        return service.getManifestUrl(host, token, id)
             .onFailure().invoke(ex -> LOG.warnf("Failed to get manifest URL for channel: %s", channel, ex))
             .onItem().transformToMulti(service::stream);
     }

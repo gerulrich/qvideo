@@ -8,6 +8,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
+import org.bson.types.ObjectId;
 import quantum.video.model.Channel;
 import quantum.video.repository.ChannelRepository;
 
@@ -68,15 +69,17 @@ public class ChannelSegmentService extends AbstractStreamService {
      *
      * @param host The Base64-encoded host name
      * @param token The security token for authorization
-     * @param channel The channel code identifier
+     * @param id The channel id
      * @param file The specific audio segment file identifier
      * @return A {@link Multi} emitting the audio segment content as {@link Buffer} chunks
      */
-    public Uni<String> getAudioSegment(String host, String token, String channel, String file) {
-        return  getChannel(channel)
-                .onItem().ifNull().failWith(() -> new NotFoundException("Channel segment not found"))
-                .flatMap(ch -> extractPathBetweenDomainAndFile(ch.url))
-                .map(path -> formatAudioUrl(host, token, path, channel, file));
+    public Uni<String> getAudioSegment(String host, String token, ObjectId id, String file) {
+        return  getChannel(id)
+            .onItem().ifNull().failWith(() -> new NotFoundException("Channel segment not found"))
+            .map(ch -> {
+                String basePath = getBasePath(ch.url);
+                return formatAudioUrl(host, token, basePath, getChannelCodeFromUrl(ch.url), file);
+            });
     }
 
     /**
@@ -98,15 +101,17 @@ public class ChannelSegmentService extends AbstractStreamService {
      *
      * @param host The Base64-encoded host name
      * @param token The security token for authorization
-     * @param channel The channel code identifier
+     * @param id The channel id
      * @param file The specific video segment file identifier
      * @return A {@link Multi} emitting the video segment content as {@link Buffer} chunks
      */
-    public Uni<String> getVideoSegment(String host, String token, String channel, String file) {
-        return getChannel(channel)
-                .onItem().ifNull().failWith(() -> new NotFoundException("Channel segment not found"))
-                .flatMap(ch -> extractPathBetweenDomainAndFile(ch.url))
-                .map(path -> formatVideoUrl(host, token, path, channel, file));
+    public Uni<String> getVideoSegment(String host, String token, ObjectId id, String file) {
+        return getChannel(id)
+            .onItem().ifNull().failWith(() -> new NotFoundException("Channel segment not found"))
+            .map(channel -> {
+                String basePath = getBasePath(channel.url);
+                return formatVideoUrl(host, token, basePath, getChannelCodeFromUrl(channel.url), file);
+            });
     }
 
     /**
@@ -117,10 +122,12 @@ public class ChannelSegmentService extends AbstractStreamService {
      * If the channel is not in cache, it's retrieved from the repository and then cached.
      * </p>
      *
-     * @param channel The channel code to retrieve
+     * @param id The channel id to retrieve
      * @return A {@link Uni} containing the {@link Channel} information, or an error if not found
      */
-    private Uni<Channel> getChannel(String channel) {
-        return cache.get(channel, k -> repository.findByCode(k)).flatMap(Function.identity());
+    private Uni<Channel> getChannel(ObjectId id) {
+        return cache.get(id, k -> repository.findById(k)).flatMap(Function.identity());
     }
+
+
 }

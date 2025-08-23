@@ -6,9 +6,12 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.core.http.HttpClientRequest;
 import jakarta.inject.Inject;
 
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Base64;
+import java.util.Optional;
 
 /**
  * Abstract base service for streaming functionality.
@@ -141,37 +144,61 @@ public abstract class AbstractStreamService {
     }
 
     /**
-     * Extracts the path segment between the domain and the file name from a URL string.
+     * Extracts the base path from a URL string, up to and including the last slash.
      * <p>
-     * This method parses the given URL and returns the path up to and including the last slash,
-     * which is useful for reconstructing resource URLs for streaming segments.
+     * For example, given "<a href="https://domain.com/path/to/file.mpd">...</a>", returns "/path/to/".
+     * This is useful for reconstructing resource URLs for streaming segments.
      * </p>
      *
      * @param urlString the full URL string to parse
-     * @return a {@link Uni} emitting the extracted path segment
+     * @return the base path segment of the URL, including the trailing slash
+     * @throws IllegalArgumentException if the input is not a valid URL
      */
-    protected Uni<String> extractPathBetweenDomainAndFile(String urlString) {
+    protected String getBasePath(String urlString) {
         return getUrl(urlString).map(url -> {
             String path = url.getPath();
             int lastSlash = path.lastIndexOf("/");
             return path.substring(0, lastSlash + 1);
-        });
+        }).orElseThrow(() -> new IllegalArgumentException("Invalid URL: " + urlString));
     }
 
     /**
-     * Converts a string URL to a {@link URL} object wrapped in a {@link Uni}.
+     * Attempts to convert a string representation of a URL to a {@link URL} object.
      * <p>
-     * Handles checked exceptions and emits a failure if the URL is invalid.
+     * This method parses the provided string as a URI and then converts it to a URL.
+     * If the input is not a valid URI or URL, it returns {@link Optional#empty()}.
      * </p>
      *
      * @param url the string representation of the URL
-     * @return a {@link Uni} emitting the {@link URL} object or a failure
+     * @return an {@link Optional} containing the {@link URL} if valid, or empty if invalid
      */
-    private Uni<URL> getUrl(String url) {
+    private Optional<URL> getUrl(String url) {
         try {
-            return Uni.createFrom().item(new URI(url).toURL());
-        } catch (Exception e) {
-            return Uni.createFrom().failure(e);
+            return Optional.of(new URI(url).toURL());
+        } catch (URISyntaxException | MalformedURLException e) {
+            return Optional.empty();
         }
+    }
+
+    /**
+     * Extracts the channel code from a URL.
+     * <p>
+     * Takes a URL like "<a href="https://qvideo.com/sample/CH1.mpd">...</a>"
+     * and returns the filename without extension (e.g., "CH1").
+     * </p>
+     *
+     * @param url The full URL containing the channel code
+     * @return The extracted channel code
+     * @throws IllegalArgumentException if the URL format is invalid
+     */
+    protected String getChannelCodeFromUrl(String url) {
+        return Optional.ofNullable(url)
+            .map(u -> u.substring(u.lastIndexOf('/') + 1))
+            .filter(fileName -> !fileName.isEmpty())
+            .map(fileName -> {
+                int dotIndex = fileName.indexOf('.');
+                return dotIndex == -1 ? fileName : fileName.substring(0, dotIndex);
+            })
+            .orElseThrow(() -> new IllegalArgumentException("Invalid URL format: " + url));
     }
 }

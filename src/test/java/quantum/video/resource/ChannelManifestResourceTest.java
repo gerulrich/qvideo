@@ -7,6 +7,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +23,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ChannelManifestResourceTest {
 
+    public static final ObjectId CHANNEL_ID = new ObjectId("60d5f484b3f1c8b1a4e8e0a1");
     @InjectMocks
     private ChannelManifestResource resource;
 
@@ -32,13 +34,13 @@ class ChannelManifestResourceTest {
     @DisplayName("Should redirect with valid channel")
     public void shouldRedirectWithValidChannel() {
         // Given
-        when(service.getManifestRedirectUrl(anyString())).
+        when(service.getManifestRedirectUrl(any())).
         thenReturn(
             Uni.createFrom().item("http://qvideo.com/MyChannel.mpd")
         );
 
         // When
-        Response response = resource.redirect("MyChannel")
+        Response response = resource.redirect(CHANNEL_ID)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .assertCompleted()
@@ -48,7 +50,7 @@ class ChannelManifestResourceTest {
         assertEquals("http://qvideo.com/MyChannel.mpd", response.getLocation().toString());
 
         // Verify
-        verify(service).getManifestRedirectUrl("MyChannel");
+        verify(service).getManifestRedirectUrl(CHANNEL_ID);
         verifyNoMoreInteractions(service);
     }
 
@@ -56,19 +58,19 @@ class ChannelManifestResourceTest {
     @DisplayName("Should fail redirect with invalid channel")
     public void shouldFailRedirectWithInvalidChannel() {
         // Given
-        when(service.getManifestRedirectUrl(anyString())).
+        when(service.getManifestRedirectUrl(any())).
         thenReturn(
             Uni.createFrom().failure(new NotFoundException("Manifest not found"))
         );
 
         // When & Then
-        resource.redirect("MyChannel")
+        resource.redirect(CHANNEL_ID)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .assertFailedWith(NotFoundException.class);
 
         // Verify
-        verify(service).getManifestRedirectUrl("MyChannel");
+        verify(service).getManifestRedirectUrl(CHANNEL_ID);
         verifyNoMoreInteractions(service);
     }
 
@@ -76,7 +78,7 @@ class ChannelManifestResourceTest {
     @DisplayName("Should get manifest for valid channel")
     public void shouldGetManifestForValidChannel() {
         // Given
-        when(service.getManifestUrl(anyString(), anyString(), anyString())).
+        when(service.getManifestUrl(anyString(), anyString(), any())).
         thenReturn(
             Uni.createFrom().item("http://qvideo.com/MyChannel.mpd")
         );
@@ -90,7 +92,7 @@ class ChannelManifestResourceTest {
         );
 
         // When & Then
-        resource.manifest("qvideo.com", "myToken", "MyChannel")
+        resource.manifest("qvideo.com", "myToken", CHANNEL_ID, "MyChannel")
             .subscribe()
             .withSubscriber(AssertSubscriber.create(3))
             .assertItems(new Buffer[] {
@@ -101,7 +103,7 @@ class ChannelManifestResourceTest {
             .assertCompleted();
 
         // Verify
-        verify(service).getManifestUrl("qvideo.com", "myToken", "MyChannel");
+        verify(service).getManifestUrl("qvideo.com", "myToken", CHANNEL_ID);
         verify(service).stream("http://qvideo.com/MyChannel.mpd");
         verifyNoMoreInteractions(service);
     }
@@ -110,19 +112,19 @@ class ChannelManifestResourceTest {
     @DisplayName("Should fail to get manifest for invalid channel")
     public void shouldFailGetManifestForInvalidChannel() {
         // Given
-        when(service.getManifestUrl(anyString(), anyString(), anyString())).
+        when(service.getManifestUrl(anyString(), anyString(), any())).
         thenReturn(
             Uni.createFrom().failure(new NotFoundException("Manifest not found"))
         );
 
         // When & Then
-        resource.manifest("qvideo.com", "myToken", "MyChannel")
+        resource.manifest("qvideo.com", "myToken", CHANNEL_ID, "MyChannel")
             .subscribe()
             .withSubscriber(AssertSubscriber.create())
             .assertFailedWith(NotFoundException.class);
 
         // Verify
-        verify(service).getManifestUrl("qvideo.com", "myToken", "MyChannel");
+        verify(service).getManifestUrl("qvideo.com", "myToken", CHANNEL_ID);
         verifyNoMoreInteractions(service);
     }
 

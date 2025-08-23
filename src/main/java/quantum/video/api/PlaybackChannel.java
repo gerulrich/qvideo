@@ -51,7 +51,7 @@ public record PlaybackChannel(
             channel.logo,
             channel.category,
             urlPattern != null
-                ? channel.proxy ? String.format(urlPattern, channel.code) : channel.url
+                ? channel.proxy ? String.format(urlPattern, channel.id) : channel.url
                 : null,
             program != null ?
                 new NowPlaying(

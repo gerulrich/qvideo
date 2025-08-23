@@ -14,22 +14,17 @@ public class TestBuilder {
     public static class ChannelBuilder {
         private ObjectId id;
         private String name;
-        private String code;
         private String url;
         private String logo;
         private boolean proxy;
         private DrmConfig drm;
 
-        public ChannelBuilder id(String id) {
-            this.id = new ObjectId(id);
+        public ChannelBuilder id(ObjectId id) {
+            this.id = id;
             return this;
         }
         public ChannelBuilder name(String name) {
             this.name = name;
-            return this;
-        }
-        public ChannelBuilder code(String code) {
-            this.code = code;
             return this;
         }
         public ChannelBuilder url(String url) {
@@ -57,7 +52,6 @@ public class TestBuilder {
             Channel channel = new Channel();
             channel.id = this.id;
             channel.name = this.name;
-            channel.code = this.code;
             channel.url = this.url;
             channel.logo = this.logo;
             channel.drm = this.drm;
@@ -75,8 +69,8 @@ public class TestBuilder {
         private Instant start;
         private Instant end;
 
-        public ProgramBuilder id(String id) {
-            this.id = new ObjectId(id);
+        public ProgramBuilder id(ObjectId id) {
+            this.id = id;
             return this;
         }
         public ProgramBuilder title(String title) {

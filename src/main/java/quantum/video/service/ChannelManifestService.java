@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.HttpHeaders;
+import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
 import quantum.video.model.Channel;
 import quantum.video.repository.ChannelRepository;
@@ -14,11 +15,11 @@ import quantum.video.repository.ChannelRepository;
 import java.util.function.Function;
 
 /**
- * Service for handling channel manifest operations for live streaming.
+ * Service for handling channel manifest operations for live-streaming.
  * <p>
  * This service extends {@link AbstractStreamService} to provide specific functionality
  * for channel manifest operations. It manages the retrieval and generation of DASH
- * manifests for live streaming channels, with caching support for improved performance.
+ * manifests for live-streaming channels, with caching support for improved performance.
  * </p>
  * <p>
  * The service provides two main operations:
@@ -37,7 +38,7 @@ import java.util.function.Function;
 public class ChannelManifestService extends AbstractStreamService {
 
     private static final Logger LOG = Logger.getLogger(ChannelManifestService.class);
-    private static final String MANIFEST_REDIRECT_URL = "/live/%s/%s/%s.mpd";
+    private static final String MANIFEST_REDIRECT_URL = "/live/%s/%s/%s/%s.mpd";
 
     @Inject
     private ChannelRepository repository;
@@ -62,45 +63,47 @@ public class ChannelManifestService extends AbstractStreamService {
      * where host is Base64 encoded for security.
      * </p>
      *
-     * @param channel The channel code identifier
+     * @param id The channel id to retrieve the manifest for
      * @return A {@link Uni} containing the formatted manifest URL path, or an error if the channel is not found
      */
-    public Uni<String> getManifestRedirectUrl(String channel) {
-        LOG.infof("Channel URL: %s", channel);
-        return getChannel(channel)
+    public Uni<String> getManifestRedirectUrl(ObjectId id) {
+        LOG.infof("Channel URL: %s", id);
+        return getChannel(id)
             .onItem().ifNull().failWith(() -> new NotFoundException("Manifest not found"))
-            .flatMap(ch ->
-                get(ch.url)
+            .flatMap(channel ->
+                get(channel.url)
                 .onItem().transformToUni(req -> req.send())
                 .onFailure().retry().atMost(3)
                 .onItem().transform(resp -> {
                     String location = resp.headers().get(HttpHeaders.LOCATION);
                     String token = location.split("/")[3];
                     String host = base64Encoder.encodeToString(location.split("/")[2].getBytes());
-                    return String.format(MANIFEST_REDIRECT_URL, host, token, ch.code);
+                    return String.format(MANIFEST_REDIRECT_URL, host, token, channel.id, getChannelCodeFromUrl(channel.url));
                 })
             );
     }
 
-    public Uni<String> getManifestUrl(String host, String token, String channel) {
-        return getChannel(channel)
+    public Uni<String> getManifestUrl(String host, String token, ObjectId id) {
+        return getChannel(id)
                 .onItem().ifNull().failWith(() -> new NotFoundException("Manifest not found"))
-                .flatMap(ch -> extractPathBetweenDomainAndFile(ch.url))
-                .map(path -> formatMpdUrl(host, token, channel, path));
+                .map(channel -> {
+                    String basePath = getBasePath(channel.url);
+                    return formatMpdUrl(host, token, getChannelCodeFromUrl(channel.url), basePath);
+                });
     }
 
     /**
      * Retrieves channel information with caching support.
      * <p>
-     * This private helper method retrieves channel information by its code,
+     * This private helper method retrieves channel information by its id,
      * using the Quarkus cache system to optimize repeated requests for the same channel.
      * If the channel is not in cache, it's retrieved from the repository and then cached.
      * </p>
      *
-     * @param channel The channel code to retrieve
+     * @param id The channel id to retrieve
      * @return A {@link Uni} containing the {@link Channel} information, or an error if not found
      */
-    private Uni<Channel> getChannel(String channel) {
-        return cache.get(channel, k -> repository.findByCode(k)).flatMap(Function.identity());
+    private Uni<Channel> getChannel(ObjectId id) {
+        return cache.get(id, k -> repository.findById(k)).flatMap(Function.identity());
     }
 }

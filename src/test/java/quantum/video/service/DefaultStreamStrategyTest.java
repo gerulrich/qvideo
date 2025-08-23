@@ -92,11 +92,9 @@ class DefaultStreamStrategyTest {
         when(httpResponse.pause()).thenReturn(httpResponse);
 
         // When & Then
-        String url = "https://test.com/stream.mpd";
-        AssertSubscriber<Buffer> subscriber = strategy.stream(url)
-            .subscribe().withSubscriber(AssertSubscriber.create(1));
-
-        subscriber
+        strategy.stream("https://test.com/stream.mpd")
+            .subscribe()
+            .withSubscriber(AssertSubscriber.create(1))
             .assertCompleted()
             .assertItems(buffer);
 
@@ -124,11 +122,10 @@ class DefaultStreamStrategyTest {
         when(httpRequest.idleTimeout(30000)).thenReturn(httpRequest);
 
         // When & Then
-        String url = "https://test.com/stream.mpd";
-        AssertSubscriber<Buffer> subscriber = strategy.stream(url)
-            .subscribe().withSubscriber(AssertSubscriber.create());
-
-        subscriber.assertFailedWith(WebApplicationException.class, "Failed: 404");
+        strategy.stream("https://test.com/stream.mpd")
+            .subscribe()
+            .withSubscriber(AssertSubscriber.create())
+            .assertFailedWith(WebApplicationException.class, "Failed: 404");
 
         // Verify
         verify(httpClient).request(any(RequestOptions.class));
@@ -147,11 +144,10 @@ class DefaultStreamStrategyTest {
         when(httpClient.request(any(RequestOptions.class))).thenReturn(Uni.createFrom().failure(requestException));
 
         // When & Then
-        String url = "https://test.com/stream.mpv";
-        AssertSubscriber<Buffer> subscriber = strategy.stream(url)
-            .subscribe().withSubscriber(AssertSubscriber.create());
-
-        subscriber.assertFailedWith(RuntimeException.class, "Request creation failed");
+        strategy.stream("https://test.com/stream.mpv")
+            .subscribe()
+            .withSubscriber(AssertSubscriber.create())
+            .assertFailedWith(RuntimeException.class, "Request creation failed");
 
         // Verify
         verify(httpClient).request(any(RequestOptions.class));
@@ -170,8 +166,7 @@ class DefaultStreamStrategyTest {
         when(httpRequest.idleTimeout(30000)).thenReturn(httpRequest);
 
         // When & Then
-        String url = "https://test.com/stream.mpd";
-        strategy.stream(url)
+        strategy.stream("https://test.com/stream.mpd")
             .subscribe()
             .withSubscriber(AssertSubscriber.create())
             .assertFailedWith(RuntimeException.class, "Send failed");
@@ -207,8 +202,7 @@ class DefaultStreamStrategyTest {
         }).when(httpResponse).exceptionHandler(any());
 
         // When & Then
-        String url = "https://test.com/stream.mpd";
-        strategy.stream(url)
+        strategy.stream("https://test.com/stream.mpd")
             .subscribe()
             .withSubscriber(AssertSubscriber.create())
             .assertFailedWith(RuntimeException.class, "Streaming error");
