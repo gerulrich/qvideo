@@ -41,4 +41,4 @@ target/*
 
 # Application specific
 secret.jwk
-env.local
+.env
