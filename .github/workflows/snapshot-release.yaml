@@ -31,5 +31,8 @@ jobs:
           context: .
           file: Dockerfile
           push: true
+          build-args: |
+            APP_VERSION=${{ github.event.inputs.version }}
+          platforms: linux/amd64,linux/arm64
           tags: |
-            gerulrich/qmusic:${{ github.event.inputs.version }}
+            gerulrich/qvideo:${{ github.event.inputs.version }}
